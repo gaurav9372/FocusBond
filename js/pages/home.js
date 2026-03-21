@@ -139,6 +139,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.location.href = `./session.html?id=${session.id}`;
   });
 
+  // ---- Realtime: session requests ----
+  db.channel('home-session-requests')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'session_requests',
+        filter: `receiver_id=eq.${user.id}`
+      },
+      async () => {
+        await loadSessionRequests(user.id);
+        await loadPastSessions(user.id);
+      }
+    )
+    .subscribe();
+
   // ---- Logout ----
   Dom.getById('logoutBtn').addEventListener('click', async () => {
     await AuthService.logout();
