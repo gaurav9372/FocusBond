@@ -259,8 +259,10 @@ async function loadSessionRequests(userId) {
 
 async function loadPastSessions(userId) {
   const container = Dom.getById('pastSessions');
-  let hasCards = false;
   Dom.clear(container);
+
+  // Collect all past session items into one array with a common date for sorting
+  const allItems = [];
 
   // 1. Sessions where user was a participant
   const { data: myParticipations } = await db
@@ -280,8 +282,7 @@ async function loadPastSessions(userId) {
       )
     `)
     .eq('user_id', userId)
-    .eq('hidden', false)
-    .order('joined_at', { ascending: false });
+    .eq('hidden', false);
 
   const pastSessions = (myParticipations || []).filter(p =>
     p.session && (p.session.status === 'completed' || p.status === 'left')
@@ -300,7 +301,6 @@ async function loadPastSessions(userId) {
 
     let partner = (allParticipants || []).find(p => p.user_id !== userId);
 
-    // If no partner in participants, check session_requests for the invited user
     if (!partner) {
       const { data: reqData } = await db
         .from('session_requests')
@@ -318,65 +318,50 @@ async function loadPastSessions(userId) {
     const neverStarted = !entry.session.started_at;
     const outcome = neverStarted ? 'waiting_left' : TimeUtils.getOutcome(focusSeconds, targetSeconds);
 
-    const card = buildPastSessionCard({
-      partner: partner ? partner.profile : null,
+    allItems.push({
+      type: 'participant',
       date: entry.session.created_at,
-      focusSeconds,
-      targetSeconds,
-      durationMinutes: entry.session.duration_minutes,
-      outcome,
-      onDelete: async () => {
-        await db.from('session_participants').update({ hidden: true }).eq('id', entry.id);
-        card.remove();
-        if (container.children.length === 0) {
-          container.innerHTML = '<div class="home-empty">No past sessions yet</div>';
+      card: buildPastSessionCard({
+        partner: partner ? partner.profile : null,
+        date: entry.session.created_at,
+        focusSeconds,
+        targetSeconds,
+        durationMinutes: entry.session.duration_minutes,
+        outcome,
+        onDelete: async (cardEl) => {
+          await db.from('session_participants').update({ hidden: true }).eq('id', entry.id);
+          cardEl.remove();
+          if (container.children.length === 0) {
+            container.innerHTML = '<div class="home-empty">No past sessions yet</div>';
+          }
         }
-      }
+      }),
+      sessionId: entry.session_id
     });
-
-    container.appendChild(card);
-    hasCards = true;
   }
 
-  // 2. Cancelled/rejected session requests (not started sessions)
-  // For receiver: cancelled by host, or rejected by self
+  // 2. Cancelled/rejected session requests
   const { data: receiverRequests } = await db
     .from('session_requests')
     .select(`
-      id,
-      session_id,
-      status,
-      duration_minutes,
-      created_at,
-      sender_id,
-      receiver_id,
+      id, session_id, status, duration_minutes, created_at, sender_id, receiver_id,
       sender:profiles!session_requests_sender_id_fkey(name, username, avatar_color),
       receiver:profiles!session_requests_receiver_id_fkey(name, username, avatar_color)
     `)
     .eq('receiver_id', userId)
     .in('status', ['cancelled', 'rejected']);
 
-  // For sender: rejected by receiver
   const { data: senderRequests } = await db
     .from('session_requests')
     .select(`
-      id,
-      session_id,
-      status,
-      duration_minutes,
-      created_at,
-      sender_id,
-      receiver_id,
+      id, session_id, status, duration_minutes, created_at, sender_id, receiver_id,
       sender:profiles!session_requests_sender_id_fkey(name, username, avatar_color),
       receiver:profiles!session_requests_receiver_id_fkey(name, username, avatar_color)
     `)
     .eq('sender_id', userId)
     .eq('status', 'rejected');
 
-  const endedRequests = [...(receiverRequests || []), ...(senderRequests || [])]
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-  // Exclude sessions already shown as participant-based past sessions
+  const endedRequests = [...(receiverRequests || []), ...(senderRequests || [])];
   const shownSessionIds = pastSessions.map(p => p.session_id);
 
   for (const req of endedRequests) {
@@ -435,8 +420,6 @@ async function loadPastSessions(userId) {
     deleteBtn.innerHTML = '<img src="../assets/icons/delete.svg" alt="Delete" width="22" height="22">';
     deleteBtn.addEventListener('click', async () => {
       deleteBtn.style.opacity = '0.5';
-      // Use 'cancelled' to hide from both cancelled and rejected views
-      // We delete the request row entirely for cleanup
       await db.from('session_requests').delete().eq('id', req.id);
       card.remove();
       if (container.children.length === 0) {
@@ -448,13 +431,19 @@ async function loadPastSessions(userId) {
     card.appendChild(header);
     card.appendChild(timeRow);
     card.appendChild(actions);
-    container.appendChild(card);
-    hasCards = true;
+
+    allItems.push({ type: 'request', date: req.created_at, card, sessionId: req.session_id });
   }
 
-  if (!hasCards) {
+  // Sort all items by date, latest first
+  allItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  if (allItems.length === 0) {
     container.innerHTML = '<div class="home-empty">No past sessions yet</div>';
+    return;
   }
+
+  allItems.forEach(item => container.appendChild(item.card));
 }
 
 function buildPastSessionCard({ partner, date, focusSeconds, targetSeconds, durationMinutes, outcome, onDelete }) {
@@ -521,7 +510,7 @@ function buildPastSessionCard({ partner, date, focusSeconds, targetSeconds, dura
   deleteBtn.innerHTML = '<img src="../assets/icons/delete.svg" alt="Delete" width="22" height="22">';
   deleteBtn.addEventListener('click', async () => {
     deleteBtn.style.opacity = '0.5';
-    await onDelete();
+    await onDelete(card);
   });
   actions.appendChild(deleteBtn);
 
