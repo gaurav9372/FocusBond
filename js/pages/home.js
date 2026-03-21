@@ -88,8 +88,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const item = document.createElement('div');
       item.className = 'custom-dropdown__item';
       const initial = (friend.name || '?')[0].toUpperCase();
+      const color = friend.avatar_color || '#8b5cf6';
       item.innerHTML = `
-        <div class="avatar avatar-sm" style="background:var(--color-purple);color:#fff;font-size:0.75rem;">${initial}</div>
+        <div class="avatar avatar-sm" style="background:${color};color:#fff;font-size:0.75rem;">${initial}</div>
         <div class="custom-dropdown__info">
           <span class="custom-dropdown__name">${friend.name}</span>
           <span class="custom-dropdown__username">${friend.username}</span>
@@ -99,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectedFriendId = friend.id;
         sendBtn.disabled = false;
         friendDDTrigger.querySelector('.custom-dropdown__text').innerHTML = `
-          <div class="avatar avatar-xs" style="background:var(--color-purple);color:#fff;font-size:0.6rem;">${initial}</div>
+          <div class="avatar avatar-xs" style="background:${color};color:#fff;font-size:0.6rem;">${initial}</div>
           ${friend.name}
         `;
         friendDDMenu.classList.add('hidden');
