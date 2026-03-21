@@ -12,7 +12,10 @@
 <body>
   <div class="container auth-page">
     <div class="page-content">
-      <h1 class="auth-title">Create Account</h1>
+      <div class="page-header">
+        <a href="../index.html" class="back-btn"><img src="../assets/icons/back.svg" alt="Back"></a>
+        <h1 class="auth-title" style="margin-bottom:0">Create Account</h1>
+      </div>
 
       <form id="registerForm" class="auth-form" novalidate>
         <div class="input-group">
@@ -32,12 +35,24 @@
 
         <div class="input-group">
           <label for="password">Enter Password</label>
-          <input type="password" id="password" class="input" data-field="password" placeholder="Create a password" autocomplete="new-password">
+          <div class="password-wrapper">
+            <input type="password" id="password" class="input" data-field="password" placeholder="Create a password" autocomplete="new-password">
+            <button type="button" class="eye-toggle" data-target="password" aria-label="Toggle password visibility">
+              <svg class="eye-icon eye-open" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-icon eye-closed" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
         </div>
 
         <div class="input-group">
           <label for="confirmPassword">Re-enter Password</label>
-          <input type="password" id="confirmPassword" class="input" data-field="confirmPassword" placeholder="Confirm your password" autocomplete="new-password">
+          <div class="password-wrapper">
+            <input type="password" id="confirmPassword" class="input" data-field="confirmPassword" placeholder="Confirm your password" autocomplete="new-password">
+            <button type="button" class="eye-toggle" data-target="confirmPassword" aria-label="Toggle password visibility">
+              <svg class="eye-icon eye-open" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-icon eye-closed" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
         </div>
 
         <div class="auth-actions">

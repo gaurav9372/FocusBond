@@ -36,3 +36,31 @@
   color: var(--color-purple);
   font-weight: 500;
 }
+
+/* Password eye toggle */
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper .input {
+  padding-right: 44px;
+}
+
+.eye-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eye-toggle:hover {
+  color: var(--text-primary);
+}

@@ -54,5 +54,18 @@ db.auth.onAuthStateChange((event, session) => {
   document.documentElement.setAttribute('data-theme', theme);
 })();
 
+// Password eye toggle
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.eye-toggle');
+  if (!btn) return;
+  const targetId = btn.getAttribute('data-target');
+  const input = document.getElementById(targetId);
+  if (!input) return;
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+  btn.querySelector('.eye-open').style.display = isPassword ? 'none' : '';
+  btn.querySelector('.eye-closed').style.display = isPassword ? '' : 'none';
+});
+
 // Run auth guard on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', authGuard);
