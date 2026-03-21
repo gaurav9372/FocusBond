@@ -20,6 +20,18 @@
   justify-content: space-between;
   padding: var(--spacing-md) 0;
   margin-bottom: var(--spacing-md);
+  gap: var(--spacing-sm);
+}
+
+.page-header .back-btn {
+  margin-right: 0;
+  flex-shrink: 0;
+}
+
+.page-header .back-btn + h1,
+.page-header .back-btn + .auth-title,
+.page-header .back-btn + .page-header__title {
+  flex: 1;
 }
 
 .page-header__title {
