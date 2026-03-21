@@ -86,13 +86,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadParticipants();
     renderParticipants();
 
-    // Check if all participants are ready -> auto-start
+    // Check if host left during waiting — redirect others
     if (session.status === 'waiting') {
+      const host = participants.find(p => p.user_id === session.created_by);
+      if (host && host.status === 'left' && user.id !== session.created_by) {
+        Dom.showToast('Host cancelled the session');
+        setTimeout(() => { window.location.href = './home.html'; }, 1500);
+        return;
+      }
+
+      // Check if all participants are ready -> auto-start
       const allReady = participants.length >= 2 && participants.every(p => p.status === 'ready');
       if (allReady) {
         session.status = 'active';
         await SessionService.updateSessionStatus(sessionId, 'active');
-        // Update all participants to active
         await SessionService.updateMyStatus(sessionId, user.id, 'active');
         showActiveState();
       }
@@ -182,6 +189,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     els.btnLeave.onclick = async () => {
       if (!confirm('Leave this session?')) return;
       els.btnLeave.disabled = true;
+
+      // If host (creator) leaves, cancel the whole session
+      if (session.created_by === user.id) {
+        // Cancel all pending session requests
+        await db
+          .from('session_requests')
+          .update({ status: 'rejected' })
+          .eq('session_id', sessionId)
+          .eq('status', 'pending');
+
+        // Mark session as completed
+        await SessionService.updateSessionStatus(sessionId, 'completed');
+      }
+
       await SessionService.updateMyStatus(sessionId, user.id, 'left');
       window.location.href = './home.html';
     };
