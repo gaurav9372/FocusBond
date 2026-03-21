@@ -2,6 +2,12 @@
    FocusBond — Session Page
    =========================== */
 
+/* Active session green background */
+body.session-active {
+  background-color: #0a1f12;
+  transition: background-color 0.5s ease;
+}
+
 /* Session header info */
 .session-header {
   text-align: center;
@@ -55,6 +61,16 @@
   margin-top: var(--spacing-lg);
 }
 
+/* Edit time inputs */
+.edit-time-inputs {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.edit-time-inputs .input-group {
+  flex: 1;
+}
+
 /* Participant leave info */
 .participant-status {
   display: flex;
@@ -64,8 +80,9 @@
 }
 
 .participant-left-info {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  color: var(--color-red);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 

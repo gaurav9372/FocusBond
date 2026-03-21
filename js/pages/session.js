@@ -122,6 +122,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       await SessionService.updateMyStatus(sessionId, user.id, 'active');
       showActiveState();
     }
+
+    // Beep + toast when partner leaves during active session
+    if (session.status === 'active' && payload.new && payload.new.status === 'left' && payload.new.user_id !== user.id) {
+      const partnerP = participants.find(p => p.user_id === payload.new.user_id);
+      const partnerName = partnerP && partnerP.profile ? partnerP.profile.name : 'Partner';
+      playBeep();
+      Dom.showToast(`${partnerName} left the session`);
+    }
   });
 
   // Subscribe to session request changes (invite accepted/rejected)
@@ -263,6 +271,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ---- ACTIVE STATE ----
 
   function showActiveState() {
+    document.body.classList.add('session-active');
     Dom.show(els.sessionLive);
     Dom.hide(els.sessionOutcome);
     Dom.show(els.liveActions);
@@ -293,6 +302,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       await SessionService.updateMyStatus(sessionId, user.id, 'left');
       showOutcome(elapsedSeconds);
     };
+  }
+
+  // ---- BEEP SOUND ----
+
+  function playBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.value = 0.3;
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {
+      // Audio not supported
+    }
   }
 
   // ---- TIMER ----
@@ -362,6 +391,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ---- OUTCOME STATE ----
 
   function showOutcome(focusSeconds) {
+    document.body.classList.remove('session-active');
     Dom.hide(els.sessionLive);
     Dom.show(els.sessionOutcome);
     Dom.hide(els.liveActions);
@@ -399,13 +429,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit time button
     els.btnEditTime.onclick = () => {
-      const input = prompt('Enter your focus time in minutes:', Math.floor(focusSeconds / 60));
-      if (input !== null) {
-        const editedMinutes = parseInt(input);
-        if (!isNaN(editedMinutes) && editedMinutes >= 0) {
-          showOutcome(editedMinutes * 60);
+      const modal = Dom.getById('editTimeModal');
+      const minsInput = Dom.getById('editMinutes');
+      const secsInput = Dom.getById('editSeconds');
+
+      minsInput.value = Math.floor(focusSeconds / 60);
+      secsInput.value = focusSeconds % 60;
+      Dom.show(modal);
+
+      Dom.getById('editTimeClose').onclick = () => Dom.hide(modal);
+      modal.addEventListener('click', (e) => { if (e.target === modal) Dom.hide(modal); });
+
+      Dom.getById('editTimeSave').onclick = () => {
+        const editedMins = parseInt(minsInput.value) || 0;
+        const editedSecs = parseInt(secsInput.value) || 0;
+        if (editedMins >= 0 && editedSecs >= 0 && editedSecs < 60) {
+          Dom.hide(modal);
+          showOutcome(editedMins * 60 + editedSecs);
+        } else {
+          Dom.showToast('Invalid time');
         }
-      }
+      };
     };
   }
 

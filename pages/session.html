@@ -75,6 +75,29 @@
       </div>
     </div>
 
+    <!-- Edit Time Modal -->
+    <div class="modal-overlay hidden" id="editTimeModal">
+      <div class="modal">
+        <div class="modal__header">
+          <h2 class="modal__title">Edit Focus Time</h2>
+          <button class="modal__close" id="editTimeClose" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal__body">
+          <div class="edit-time-inputs">
+            <div class="input-group">
+              <label for="editMinutes">Minutes</label>
+              <input type="number" id="editMinutes" class="input" min="0" max="999" value="0">
+            </div>
+            <div class="input-group">
+              <label for="editSeconds">Seconds</label>
+              <input type="number" id="editSeconds" class="input" min="0" max="59" value="0">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" id="editTimeSave">Save Time</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Time's Up Modal -->
     <div class="modal-overlay hidden" id="timesUpModal">
       <div class="modal">
