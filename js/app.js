@@ -39,7 +39,7 @@ let wasSignedIn = false;
 
 // Listen for auth state changes
 db.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+  if (session) {
     wasSignedIn = true;
   }
   // Only redirect on SIGNED_OUT if user was previously signed in (actual logout)
