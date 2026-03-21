@@ -353,7 +353,7 @@ async function loadPastSessions(userId) {
     // Get session request for this session
     const { data: reqData } = await db
       .from('session_requests')
-      .select('created_at, sender_id, receiver_id, status, sender:profiles!session_requests_sender_id_fkey(name), receiver:profiles!session_requests_receiver_id_fkey(name)')
+      .select('created_at, sender_id, receiver_id, status, sender:profiles!session_requests_sender_id_fkey(name, username, avatar_color), receiver:profiles!session_requests_receiver_id_fkey(name, username, avatar_color)')
       .eq('session_id', entry.session_id)
       .maybeSingle();
 
