@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let realtimeChannel = null;
   let pendingInvites = [];
   let startTimestamp = null;
+  let hasLeft = false;
   const targetSeconds = session.duration_minutes * 60;
 
   // DOM refs
@@ -84,6 +85,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Subscribe to realtime participant changes
   realtimeChannel = SessionService.subscribeToParticipants(sessionId, async (payload) => {
+    // Ignore realtime events if user has already left
+    if (hasLeft) return;
+
     await loadParticipants();
     renderParticipants();
 
@@ -171,17 +175,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Show actual participants
     participants.forEach(p => {
-      const badge = Dom.create('span', {
-        className: `badge badge-${p.status}`,
-        textContent: p.status
-      });
-      const row = Dom.buildUserRow(p.profile, badge);
+      const actionEl = document.createElement('div');
+      actionEl.className = 'participant-status';
+
+      if (p.status === 'left' && session.status === 'active' && p.left_at) {
+        // Show leave info for users who left during active session
+        const focusTime = p.focus_time_seconds || 0;
+        const leftBadge = Dom.create('span', { className: 'badge badge-left', textContent: 'Left' });
+        const leftInfo = Dom.create('div', {
+          className: 'participant-left-info',
+          textContent: `${TimeUtils.formatTimerLong(focusTime)} · ${TimeUtils.formatTime(p.left_at)}`
+        });
+        actionEl.appendChild(leftBadge);
+        actionEl.appendChild(leftInfo);
+      } else {
+        const badge = Dom.create('span', {
+          className: `badge badge-${p.status}`,
+          textContent: p.status
+        });
+        actionEl.appendChild(badge);
+      }
+
+      const row = Dom.buildUserRow(p.profile, actionEl);
+      if (p.status === 'left') row.style.opacity = '0.6';
       els.participantsList.appendChild(row);
     });
 
     // Show invited users who haven't joined yet
     pendingInvites.forEach(invite => {
-      // Skip if they're already a participant
       if (participants.some(p => p.user_id === invite.receiver.id)) return;
 
       const badge = Dom.create('span', {
@@ -265,8 +286,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Stop session button
     els.btnStop.onclick = async () => {
+      hasLeft = true;
       stopTimer();
       elapsedSeconds = Math.floor((Date.now() - startTimestamp) / 1000);
+      await SessionService.submitFocusTime(sessionId, user.id, elapsedSeconds);
       await SessionService.updateMyStatus(sessionId, user.id, 'left');
       showOutcome(elapsedSeconds);
     };
@@ -323,6 +346,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     Dom.show(modal);
 
     Dom.getById('timesUpComplete').onclick = async () => {
+      hasLeft = true;
       Dom.hide(modal);
       elapsedSeconds = Math.floor((Date.now() - startTimestamp) / 1000);
       await SessionService.updateMyStatus(sessionId, user.id, 'left');
