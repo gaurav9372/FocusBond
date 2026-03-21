@@ -117,6 +117,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Sticky footer on home page */
+.home-footer {
+  position: sticky;
+  bottom: 0;
+  padding: var(--spacing-md) 0 var(--spacing-lg);
+  background-color: var(--bg-primary);
+  z-index: 10;
+}
+
 /* ---- Past session card variants ---- */
 .request-card--success {
   border-left: 3px solid var(--color-green);
