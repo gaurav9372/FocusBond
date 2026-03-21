@@ -75,6 +75,21 @@
       </div>
     </div>
 
+    <!-- Confirm Modal -->
+    <div class="modal-overlay hidden" id="confirmModal">
+      <div class="modal">
+        <div class="modal__header">
+          <h2 class="modal__title" id="confirmTitle">Leave Session?</h2>
+        </div>
+        <div class="modal__body">
+          <p class="text-secondary" id="confirmMessage">Are you sure you want to leave this session?</p>
+          <div class="request-card__actions">
+            <button class="btn btn-secondary" id="confirmCancel">Cancel</button>
+            <button class="btn btn-danger" id="confirmOk">Leave</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

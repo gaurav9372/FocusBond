@@ -186,25 +186,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderParticipants();
 
     // Leave session button
-    els.btnLeave.onclick = async () => {
-      if (!confirm('Leave this session?')) return;
-      els.btnLeave.disabled = true;
+    els.btnLeave.onclick = () => {
+      showConfirmModal('Leave Session?', 'Are you sure you want to leave this session?', async () => {
+        els.btnLeave.disabled = true;
 
-      // If host (creator) leaves, cancel the whole session
-      if (session.created_by === user.id) {
-        // Cancel all pending session requests
-        await db
-          .from('session_requests')
-          .update({ status: 'cancelled' })
-          .eq('session_id', sessionId)
-          .eq('status', 'pending');
+        // If host (creator) leaves, cancel the whole session
+        if (session.created_by === user.id) {
+          await db
+            .from('session_requests')
+            .update({ status: 'cancelled' })
+            .eq('session_id', sessionId)
+            .eq('status', 'pending');
 
-        // Mark session as completed
-        await SessionService.updateSessionStatus(sessionId, 'completed');
-      }
+          await SessionService.updateSessionStatus(sessionId, 'completed');
+        }
 
-      await SessionService.updateMyStatus(sessionId, user.id, 'left');
-      window.location.href = './home.html';
+        await SessionService.updateMyStatus(sessionId, user.id, 'left');
+        window.location.href = './home.html';
+      });
     };
 
     // Check if already ready or need to mark ready
@@ -334,5 +333,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     const myParticipant = participants.find(p => p.user_id === user.id);
     const focusSeconds = myParticipant ? myParticipant.focus_time_seconds : 0;
     showOutcome(focusSeconds);
+  }
+
+  // ---- CONFIRM MODAL ----
+
+  function showConfirmModal(title, message, onConfirm) {
+    const modal = Dom.getById('confirmModal');
+    Dom.getById('confirmTitle').textContent = title;
+    Dom.getById('confirmMessage').textContent = message;
+    Dom.show(modal);
+
+    const cancelBtn = Dom.getById('confirmCancel');
+    const okBtn = Dom.getById('confirmOk');
+
+    // Clean up old listeners by replacing nodes
+    const newCancel = cancelBtn.cloneNode(true);
+    const newOk = okBtn.cloneNode(true);
+    cancelBtn.replaceWith(newCancel);
+    okBtn.replaceWith(newOk);
+
+    newCancel.addEventListener('click', () => Dom.hide(modal));
+    newOk.addEventListener('click', () => {
+      Dom.hide(modal);
+      onConfirm();
+    });
   }
 });
