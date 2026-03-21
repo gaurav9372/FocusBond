@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Cancel all pending session requests
         await db
           .from('session_requests')
-          .update({ status: 'rejected' })
+          .update({ status: 'cancelled' })
           .eq('session_id', sessionId)
           .eq('status', 'pending');
 
