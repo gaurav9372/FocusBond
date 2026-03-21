@@ -11,12 +11,12 @@ function resolveAppPath(path) {
 }
 
 // Pages that don't require authentication
-const PUBLIC_PAGES = ['index.html', 'register.html'];
+const PUBLIC_PAGES = ['index.html', 'register.html', 'index', 'register', '/'];
 
 // Auth guard — redirect to login if not authenticated
 async function authGuard() {
   const currentPath = window.location.pathname;
-  const isPublicPage = PUBLIC_PAGES.some(p => currentPath.endsWith(p));
+  const isPublicPage = PUBLIC_PAGES.some(p => currentPath.endsWith(p)) || currentPath === '/';
 
   if (isPublicPage) return;
 
