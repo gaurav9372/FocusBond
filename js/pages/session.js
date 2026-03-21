@@ -107,7 +107,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Subscribe to session request changes (invite accepted/rejected)
-  let requestsChannel = SessionService.subscribeToRequests(sessionId, async () => {
+  let requestsChannel = SessionService.subscribeToRequests(sessionId, async (payload) => {
+    const updated = payload.new;
+
+    // If the invite was rejected, end session for the host
+    if (updated && updated.status === 'rejected' && session.status === 'waiting' && session.created_by === user.id) {
+      await SessionService.updateMyStatus(sessionId, user.id, 'left');
+      await SessionService.updateSessionStatus(sessionId, 'completed');
+      Dom.showToast('Session request was declined');
+      setTimeout(() => { window.location.href = './home.html'; }, 1500);
+      return;
+    }
+
     await loadParticipants();
     renderParticipants();
   });
