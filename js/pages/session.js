@@ -274,6 +274,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ---- TIMER ----
 
+  let timesUpShown = false;
+
   function startTimer() {
     function tick() {
       const elapsedMs = Date.now() - startTimestamp;
@@ -292,6 +294,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         els.timerElapsed.classList.add('text-green');
         els.timerElapsed.classList.remove('text-red');
         els.progressFill.style.backgroundColor = 'var(--color-green)';
+
+        // Pause and show Time's Up modal once
+        if (!timesUpShown) {
+          timesUpShown = true;
+          stopTimer();
+          showTimesUpModal();
+          return;
+        }
       } else {
         els.timerElapsed.classList.remove('text-green');
       }
@@ -306,6 +316,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       cancelAnimationFrame(timerInterval);
       timerInterval = null;
     }
+  }
+
+  function showTimesUpModal() {
+    const modal = Dom.getById('timesUpModal');
+    Dom.show(modal);
+
+    Dom.getById('timesUpComplete').onclick = async () => {
+      Dom.hide(modal);
+      elapsedSeconds = Math.floor((Date.now() - startTimestamp) / 1000);
+      await SessionService.updateMyStatus(sessionId, user.id, 'left');
+      showOutcome(elapsedSeconds);
+    };
+
+    Dom.getById('timesUpContinue').onclick = () => {
+      Dom.hide(modal);
+      startTimer();
+    };
   }
 
   // ---- OUTCOME STATE ----
