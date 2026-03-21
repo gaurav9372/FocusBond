@@ -160,7 +160,8 @@ async function loadSessionRequests(userId) {
       sender:profiles!session_requests_sender_id_fkey(id, name, username, avatar_color)
     `)
     .eq('receiver_id', userId)
-    .eq('status', 'pending');
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
 
   if (error || !requests || requests.length === 0) {
     container.innerHTML = '<div class="home-empty">No pending session requests</div>';
@@ -372,7 +373,8 @@ async function loadPastSessions(userId) {
     .eq('sender_id', userId)
     .eq('status', 'rejected');
 
-  const endedRequests = [...(receiverRequests || []), ...(senderRequests || [])];
+  const endedRequests = [...(receiverRequests || []), ...(senderRequests || [])]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   // Exclude sessions already shown as participant-based past sessions
   const shownSessionIds = pastSessions.map(p => p.session_id);
@@ -411,11 +413,11 @@ async function loadPastSessions(userId) {
     header.appendChild(avatar);
     header.appendChild(info);
 
-    const dateEl = Dom.create('div', {
+    const dateMeta = Dom.create('div', {
       className: 'request-card__meta',
-      textContent: TimeUtils.formatDate(req.created_at)
+      textContent: `${TimeUtils.formatDate(req.created_at)} at ${TimeUtils.formatTime(req.created_at)}`
     });
-    header.appendChild(dateEl);
+    header.appendChild(dateMeta);
 
     const timeRow = document.createElement('div');
     timeRow.className = 'past-session__time';
@@ -480,7 +482,7 @@ function buildPastSessionCard({ partner, date, focusSeconds, targetSeconds, dura
 
   const dateEl = Dom.create('div', {
     className: 'request-card__meta',
-    textContent: TimeUtils.formatDate(date)
+    textContent: `${TimeUtils.formatDate(date)} at ${TimeUtils.formatTime(date)}`
   });
   header.appendChild(dateEl);
 
