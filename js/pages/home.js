@@ -343,6 +343,19 @@ async function loadPastSessions(userId) {
       events.push(`${partnerName} left at ${TimeUtils.formatTime(partner.left_at)}`);
     }
 
+    // Determine not-started reason
+    let notStartedReason = '';
+    if (!entry.session.started_at) {
+      if (reqData && reqData.status === 'rejected') {
+        const rejectorIsMe = reqData.receiver_id === userId;
+        notStartedReason = rejectorIsMe ? 'You rejected' : `${partnerName} rejected`;
+      } else if (me && me.status === 'left') {
+        notStartedReason = 'You left while waiting';
+      } else {
+        notStartedReason = `${partnerName} left while waiting`;
+      }
+    }
+
     const card = buildTimelineCard({
       partnerProfile,
       requestTime,
@@ -350,6 +363,7 @@ async function loadPastSessions(userId) {
       focusSeconds: entry.focus_time_seconds || 0,
       targetSeconds: entry.session.duration_minutes * 60,
       sessionStarted: !!entry.session.started_at,
+      notStartedReason,
       events,
       onDelete: async (cardEl) => {
         await db.from('session_participants').update({ hidden: true }).eq('id', entry.id);
@@ -390,6 +404,13 @@ async function loadPastSessions(userId) {
       }
     }
 
+    let notStartedReason = '';
+    if (req.status === 'rejected') {
+      notStartedReason = isSender ? `${partnerName} rejected` : 'You rejected';
+    } else if (req.status === 'cancelled') {
+      notStartedReason = isSender ? 'You left while waiting' : `${req.sender.name} left while waiting`;
+    }
+
     const card = buildTimelineCard({
       partnerProfile,
       requestTime: req.created_at,
@@ -397,6 +418,7 @@ async function loadPastSessions(userId) {
       focusSeconds: 0,
       targetSeconds: req.duration_minutes * 60,
       sessionStarted: false,
+      notStartedReason,
       events,
       onDelete: async (cardEl) => {
         await db.from('session_requests').delete().eq('id', req.id);
@@ -421,7 +443,7 @@ async function loadPastSessions(userId) {
   allItems.forEach(item => container.appendChild(item.card));
 }
 
-function buildTimelineCard({ partnerProfile, requestTime, durationMinutes, focusSeconds, targetSeconds, sessionStarted, events, onDelete }) {
+function buildTimelineCard({ partnerProfile, requestTime, durationMinutes, focusSeconds, targetSeconds, sessionStarted, notStartedReason, events, onDelete }) {
   const card = document.createElement('div');
   card.className = 'request-card';
   card.style.opacity = '0.7';
@@ -462,7 +484,7 @@ function buildTimelineCard({ partnerProfile, requestTime, durationMinutes, focus
 
   let outcomeLabel, timeClass;
   if (!sessionStarted) {
-    outcomeLabel = 'Not started';
+    outcomeLabel = notStartedReason ? `Not started: ${notStartedReason}` : 'Not started';
     timeClass = 'text-muted';
   } else {
     const outcome = TimeUtils.getOutcome(focusSeconds, targetSeconds);
