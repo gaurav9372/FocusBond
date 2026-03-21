@@ -337,74 +337,117 @@ async function loadPastSessions(userId) {
     hasCards = true;
   }
 
-  // 2. Cancelled session requests (host left before user B joined)
-  const { data: cancelledRequests } = await db
+  // 2. Cancelled/rejected session requests (not started sessions)
+  // For receiver: cancelled by host, or rejected by self
+  const { data: receiverRequests } = await db
     .from('session_requests')
     .select(`
       id,
       session_id,
+      status,
       duration_minutes,
       created_at,
-      sender:profiles!session_requests_sender_id_fkey(name, username, avatar_color)
+      sender_id,
+      receiver_id,
+      sender:profiles!session_requests_sender_id_fkey(name, username, avatar_color),
+      receiver:profiles!session_requests_receiver_id_fkey(name, username, avatar_color)
     `)
     .eq('receiver_id', userId)
-    .eq('status', 'cancelled');
+    .in('status', ['cancelled', 'rejected']);
 
-  if (cancelledRequests && cancelledRequests.length > 0) {
-    for (const req of cancelledRequests) {
-      const card = document.createElement('div');
-      card.className = 'request-card';
-      card.style.opacity = '0.7';
+  // For sender: rejected by receiver
+  const { data: senderRequests } = await db
+    .from('session_requests')
+    .select(`
+      id,
+      session_id,
+      status,
+      duration_minutes,
+      created_at,
+      sender_id,
+      receiver_id,
+      sender:profiles!session_requests_sender_id_fkey(name, username, avatar_color),
+      receiver:profiles!session_requests_receiver_id_fkey(name, username, avatar_color)
+    `)
+    .eq('sender_id', userId)
+    .eq('status', 'rejected');
 
-      const header = document.createElement('div');
-      header.className = 'request-card__header';
+  const endedRequests = [...(receiverRequests || []), ...(senderRequests || [])];
 
-      const avatar = Dom.buildAvatar(req.sender.name, req.sender.avatar_color, 'sm');
-      const info = document.createElement('div');
-      info.className = 'user-row__info';
-      info.innerHTML = `
-        <div class="user-row__name">${req.sender.name}</div>
-        <div class="user-row__username">${req.sender.username}</div>
-      `;
-      header.appendChild(avatar);
-      header.appendChild(info);
+  // Exclude sessions already shown as participant-based past sessions
+  const shownSessionIds = pastSessions.map(p => p.session_id);
 
-      const dateEl = Dom.create('div', {
-        className: 'request-card__meta',
-        textContent: TimeUtils.formatDate(req.created_at)
-      });
-      header.appendChild(dateEl);
+  for (const req of endedRequests) {
+    if (shownSessionIds.includes(req.session_id)) continue;
 
-      const timeRow = document.createElement('div');
-      timeRow.className = 'past-session__time';
-      timeRow.innerHTML = `
-        <span class="past-session__label text-red">Ended by ${req.sender.name}</span>
-        <span class="past-session__focus">
-          <span class="text-muted">00:00 | ${TimeUtils.formatMinutes(req.duration_minutes)}</span>
-        </span>
-      `;
+    const isSender = req.sender_id === userId;
+    const otherUser = isSender ? req.receiver : req.sender;
 
-      const actions = document.createElement('div');
-      actions.className = 'request-card__actions';
-
-      const dismissBtn = Dom.create('button', { className: 'icon-btn-ghost' });
-      dismissBtn.innerHTML = '<img src="../assets/icons/delete.svg" alt="Dismiss" width="22" height="22">';
-      dismissBtn.addEventListener('click', async () => {
-        dismissBtn.style.opacity = '0.5';
-        await db.from('session_requests').update({ status: 'rejected' }).eq('id', req.id);
-        card.remove();
-        if (container.children.length === 0) {
-          container.innerHTML = '<div class="home-empty">No past sessions yet</div>';
-        }
-      });
-      actions.appendChild(dismissBtn);
-
-      card.appendChild(header);
-      card.appendChild(timeRow);
-      card.appendChild(actions);
-      container.appendChild(card);
-      hasCards = true;
+    let label = '';
+    if (req.status === 'cancelled' && !isSender) {
+      label = `Ended by ${req.sender.name}`;
+    } else if (req.status === 'rejected' && isSender) {
+      label = `${req.receiver.name} rejected`;
+    } else if (req.status === 'rejected' && !isSender) {
+      label = 'You rejected';
+    } else {
+      continue;
     }
+
+    const card = document.createElement('div');
+    card.className = 'request-card';
+    card.style.opacity = '0.7';
+
+    const header = document.createElement('div');
+    header.className = 'request-card__header';
+
+    const avatar = Dom.buildAvatar(otherUser.name, otherUser.avatar_color, 'sm');
+    const info = document.createElement('div');
+    info.className = 'user-row__info';
+    info.innerHTML = `
+      <div class="user-row__name">${otherUser.name}</div>
+      <div class="user-row__username">${otherUser.username}</div>
+    `;
+    header.appendChild(avatar);
+    header.appendChild(info);
+
+    const dateEl = Dom.create('div', {
+      className: 'request-card__meta',
+      textContent: TimeUtils.formatDate(req.created_at)
+    });
+    header.appendChild(dateEl);
+
+    const timeRow = document.createElement('div');
+    timeRow.className = 'past-session__time';
+    timeRow.innerHTML = `
+      <span class="past-session__label text-red">${label}</span>
+      <span class="past-session__focus">
+        <span class="text-muted">00:00 | ${TimeUtils.formatMinutes(req.duration_minutes)}</span>
+      </span>
+    `;
+
+    const actions = document.createElement('div');
+    actions.className = 'request-card__actions';
+
+    const deleteBtn = Dom.create('button', { className: 'icon-btn-ghost' });
+    deleteBtn.innerHTML = '<img src="../assets/icons/delete.svg" alt="Delete" width="22" height="22">';
+    deleteBtn.addEventListener('click', async () => {
+      deleteBtn.style.opacity = '0.5';
+      // Use 'cancelled' to hide from both cancelled and rejected views
+      // We delete the request row entirely for cleanup
+      await db.from('session_requests').delete().eq('id', req.id);
+      card.remove();
+      if (container.children.length === 0) {
+        container.innerHTML = '<div class="home-empty">No past sessions yet</div>';
+      }
+    });
+    actions.appendChild(deleteBtn);
+
+    card.appendChild(header);
+    card.appendChild(timeRow);
+    card.appendChild(actions);
+    container.appendChild(card);
+    hasCards = true;
   }
 
   if (!hasCards) {
