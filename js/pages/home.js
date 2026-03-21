@@ -260,26 +260,25 @@ async function loadSessionRequests(userId) {
 async function loadPastSessions(userId) {
   const container = Dom.getById('pastSessions');
   Dom.clear(container);
-
-  // Collect all past session items into one array with a common date for sorting
   const allItems = [];
 
-  // 1. Sessions where user was a participant
+  // 1. Fetch all session requests involving this user (cancelled/rejected)
+  const { data: allRequests } = await db
+    .from('session_requests')
+    .select(`
+      id, session_id, status, duration_minutes, created_at, sender_id, receiver_id,
+      sender:profiles!session_requests_sender_id_fkey(name, username, avatar_color),
+      receiver:profiles!session_requests_receiver_id_fkey(name, username, avatar_color)
+    `)
+    .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+    .in('status', ['cancelled', 'rejected']);
+
+  // 2. Fetch participant-based past sessions
   const { data: myParticipations } = await db
     .from('session_participants')
     .select(`
-      id,
-      focus_time_seconds,
-      status,
-      hidden,
-      session_id,
-      session:sessions!session_participants_session_id_fkey(
-        id,
-        duration_minutes,
-        status,
-        created_at,
-        started_at
-      )
+      id, focus_time_seconds, status, hidden, session_id, joined_at, left_at,
+      session:sessions!session_participants_session_id_fkey(id, duration_minutes, status, created_at, started_at, created_by)
     `)
     .eq('user_id', userId)
     .eq('hidden', false);
@@ -288,154 +287,130 @@ async function loadPastSessions(userId) {
     p.session && (p.session.status === 'completed' || p.status === 'left')
   );
 
+  const processedSessionIds = new Set();
+
+  // Build timeline cards for participant-based sessions
   for (const entry of pastSessions) {
+    processedSessionIds.add(entry.session_id);
+
+    // Get all participants
     const { data: allParticipants } = await db
       .from('session_participants')
       .select(`
-        user_id,
-        focus_time_seconds,
-        status,
+        user_id, status, joined_at, left_at,
         profile:profiles!session_participants_user_id_fkey(name, username, avatar_color)
       `)
       .eq('session_id', entry.session_id);
 
-    let partner = (allParticipants || []).find(p => p.user_id !== userId);
+    // Get session request for this session
+    const { data: reqData } = await db
+      .from('session_requests')
+      .select('created_at, sender_id, receiver_id, status, sender:profiles!session_requests_sender_id_fkey(name), receiver:profiles!session_requests_receiver_id_fkey(name)')
+      .eq('session_id', entry.session_id)
+      .maybeSingle();
 
-    if (!partner) {
-      const { data: reqData } = await db
-        .from('session_requests')
-        .select('receiver:profiles!session_requests_receiver_id_fkey(name, username, avatar_color)')
-        .eq('session_id', entry.session_id)
-        .limit(1)
-        .maybeSingle();
-      if (reqData && reqData.receiver) {
-        partner = { profile: reqData.receiver };
-      }
+    const me = (allParticipants || []).find(p => p.user_id === userId);
+    const partner = (allParticipants || []).find(p => p.user_id !== userId);
+    const isHost = entry.session.created_by === userId;
+    const partnerProfile = partner ? partner.profile : (reqData ? (isHost ? reqData.receiver : reqData.sender) : null);
+    const partnerName = partnerProfile ? partnerProfile.name : 'Partner';
+
+    // Build timeline events
+    const events = [];
+    const requestTime = reqData ? reqData.created_at : entry.session.created_at;
+
+    events.push(`Requested by ${isHost ? 'you' : (reqData ? reqData.sender.name : partnerName)} at ${TimeUtils.formatTime(requestTime)}`);
+
+    if (me && me.joined_at) {
+      events.push(`You joined at ${TimeUtils.formatTime(me.joined_at)}`);
     }
 
-    const targetSeconds = entry.session.duration_minutes * 60;
-    const focusSeconds = entry.focus_time_seconds || 0;
-    const neverStarted = !entry.session.started_at;
-    const outcome = neverStarted ? 'waiting_left' : TimeUtils.getOutcome(focusSeconds, targetSeconds);
+    if (partner && partner.joined_at) {
+      events.push(`${partnerName} joined at ${TimeUtils.formatTime(partner.joined_at)}`);
+    } else if (!partner) {
+      events.push(`${partnerName} didn't join`);
+    }
 
-    allItems.push({
-      type: 'participant',
-      date: entry.session.created_at,
-      card: buildPastSessionCard({
-        partner: partner ? partner.profile : null,
-        date: entry.session.created_at,
-        focusSeconds,
-        targetSeconds,
-        durationMinutes: entry.session.duration_minutes,
-        outcome,
-        onDelete: async (cardEl) => {
-          await db.from('session_participants').update({ hidden: true }).eq('id', entry.id);
-          cardEl.remove();
-          if (container.children.length === 0) {
-            container.innerHTML = '<div class="home-empty">No past sessions yet</div>';
-          }
+    if (reqData && reqData.status === 'rejected') {
+      const rejectorIsMe = reqData.receiver_id === userId;
+      events.push(rejectorIsMe ? `You rejected` : `${partnerName} rejected`);
+    }
+
+    if (me && me.status === 'left' && me.left_at) {
+      events.push(`You left at ${TimeUtils.formatTime(me.left_at)}`);
+    }
+    if (partner && partner.status === 'left' && partner.left_at) {
+      events.push(`${partnerName} left at ${TimeUtils.formatTime(partner.left_at)}`);
+    }
+
+    const card = buildTimelineCard({
+      partnerProfile,
+      requestTime,
+      durationMinutes: entry.session.duration_minutes,
+      focusSeconds: entry.focus_time_seconds || 0,
+      targetSeconds: entry.session.duration_minutes * 60,
+      sessionStarted: !!entry.session.started_at,
+      events,
+      onDelete: async (cardEl) => {
+        await db.from('session_participants').update({ hidden: true }).eq('id', entry.id);
+        cardEl.remove();
+        if (container.children.length === 0) {
+          container.innerHTML = '<div class="home-empty">No past sessions yet</div>';
         }
-      }),
-      sessionId: entry.session_id
+      }
     });
+
+    allItems.push({ date: requestTime, card });
   }
 
-  // 2. Cancelled/rejected session requests
-  const { data: receiverRequests } = await db
-    .from('session_requests')
-    .select(`
-      id, session_id, status, duration_minutes, created_at, sender_id, receiver_id,
-      sender:profiles!session_requests_sender_id_fkey(name, username, avatar_color),
-      receiver:profiles!session_requests_receiver_id_fkey(name, username, avatar_color)
-    `)
-    .eq('receiver_id', userId)
-    .in('status', ['cancelled', 'rejected']);
-
-  const { data: senderRequests } = await db
-    .from('session_requests')
-    .select(`
-      id, session_id, status, duration_minutes, created_at, sender_id, receiver_id,
-      sender:profiles!session_requests_sender_id_fkey(name, username, avatar_color),
-      receiver:profiles!session_requests_receiver_id_fkey(name, username, avatar_color)
-    `)
-    .eq('sender_id', userId)
-    .eq('status', 'rejected');
-
-  const endedRequests = [...(receiverRequests || []), ...(senderRequests || [])];
-  const shownSessionIds = pastSessions.map(p => p.session_id);
-
-  for (const req of endedRequests) {
-    if (shownSessionIds.includes(req.session_id)) continue;
+  // Build timeline cards for cancelled/rejected requests where user was NOT a participant
+  for (const req of (allRequests || [])) {
+    if (processedSessionIds.has(req.session_id)) continue;
 
     const isSender = req.sender_id === userId;
-    const otherUser = isSender ? req.receiver : req.sender;
+    const partnerProfile = isSender ? req.receiver : req.sender;
+    const partnerName = partnerProfile.name;
 
-    let label = '';
-    if (req.status === 'cancelled' && !isSender) {
-      label = `Ended by ${req.sender.name}`;
-    } else if (req.status === 'rejected' && isSender) {
-      label = `${req.receiver.name} rejected`;
-    } else if (req.status === 'rejected' && !isSender) {
-      label = 'You rejected';
+    const events = [];
+    events.push(`Requested by ${isSender ? 'you' : req.sender.name} at ${TimeUtils.formatTime(req.created_at)}`);
+
+    if (isSender) {
+      events.push(`You joined at ${TimeUtils.formatTime(req.created_at)}`);
+      events.push(`${partnerName} didn't join`);
+      if (req.status === 'rejected') {
+        events.push(`${partnerName} rejected`);
+      }
     } else {
-      continue;
+      events.push(`${req.sender.name} joined at ${TimeUtils.formatTime(req.created_at)}`);
+      events.push(`You didn't join`);
+      if (req.status === 'rejected') {
+        events.push(`You rejected`);
+      } else if (req.status === 'cancelled') {
+        events.push(`${req.sender.name} left`);
+      }
     }
 
-    const card = document.createElement('div');
-    card.className = 'request-card';
-    card.style.opacity = '0.7';
-
-    const header = document.createElement('div');
-    header.className = 'request-card__header';
-
-    const avatar = Dom.buildAvatar(otherUser.name, otherUser.avatar_color, 'sm');
-    const info = document.createElement('div');
-    info.className = 'user-row__info';
-    info.innerHTML = `
-      <div class="user-row__name">${otherUser.name}</div>
-      <div class="user-row__username">${otherUser.username}</div>
-    `;
-    header.appendChild(avatar);
-    header.appendChild(info);
-
-    const dateMeta = Dom.create('div', {
-      className: 'request-card__meta',
-      textContent: `${TimeUtils.formatDate(req.created_at)} at ${TimeUtils.formatTime(req.created_at)}`
-    });
-    header.appendChild(dateMeta);
-
-    const timeRow = document.createElement('div');
-    timeRow.className = 'past-session__time';
-    timeRow.innerHTML = `
-      <span class="past-session__label text-red">${label}</span>
-      <span class="past-session__focus">
-        <span class="text-muted">00:00 | ${TimeUtils.formatMinutes(req.duration_minutes)}</span>
-      </span>
-    `;
-
-    const actions = document.createElement('div');
-    actions.className = 'request-card__actions';
-
-    const deleteBtn = Dom.create('button', { className: 'icon-btn-ghost' });
-    deleteBtn.innerHTML = '<img src="../assets/icons/delete.svg" alt="Delete" width="22" height="22">';
-    deleteBtn.addEventListener('click', async () => {
-      deleteBtn.style.opacity = '0.5';
-      await db.from('session_requests').delete().eq('id', req.id);
-      card.remove();
-      if (container.children.length === 0) {
-        container.innerHTML = '<div class="home-empty">No past sessions yet</div>';
+    const card = buildTimelineCard({
+      partnerProfile,
+      requestTime: req.created_at,
+      durationMinutes: req.duration_minutes,
+      focusSeconds: 0,
+      targetSeconds: req.duration_minutes * 60,
+      sessionStarted: false,
+      events,
+      onDelete: async (cardEl) => {
+        await db.from('session_requests').delete().eq('id', req.id);
+        cardEl.remove();
+        if (container.children.length === 0) {
+          container.innerHTML = '<div class="home-empty">No past sessions yet</div>';
+        }
       }
     });
-    actions.appendChild(deleteBtn);
 
-    card.appendChild(header);
-    card.appendChild(timeRow);
-    card.appendChild(actions);
-
-    allItems.push({ type: 'request', date: req.created_at, card, sessionId: req.session_id });
+    allItems.push({ date: req.created_at, card });
   }
 
-  // Sort all items by date, latest first
+  // Sort latest first
   allItems.sort((a, b) => new Date(b.date) - new Date(a.date));
 
   if (allItems.length === 0) {
@@ -446,56 +421,64 @@ async function loadPastSessions(userId) {
   allItems.forEach(item => container.appendChild(item.card));
 }
 
-function buildPastSessionCard({ partner, date, focusSeconds, targetSeconds, durationMinutes, outcome, onDelete }) {
+function buildTimelineCard({ partnerProfile, requestTime, durationMinutes, focusSeconds, targetSeconds, sessionStarted, events, onDelete }) {
   const card = document.createElement('div');
   card.className = 'request-card';
+  card.style.opacity = '0.7';
 
+  // Header: partner + duration
   const header = document.createElement('div');
   header.className = 'request-card__header';
 
-  if (partner) {
-    const avatar = Dom.buildAvatar(partner.name, partner.avatar_color, 'sm');
+  if (partnerProfile) {
+    const avatar = Dom.buildAvatar(partnerProfile.name, partnerProfile.avatar_color, 'sm');
     const info = document.createElement('div');
     info.className = 'user-row__info';
     info.innerHTML = `
-      <div class="user-row__name">${partner.name}</div>
-      <div class="user-row__username">${partner.username}</div>
+      <div class="user-row__name">${partnerProfile.name}</div>
+      <div class="user-row__username">${partnerProfile.username || ''}</div>
     `;
     header.appendChild(avatar);
     header.appendChild(info);
-  } else {
-    const info = Dom.create('div', { className: 'user-row__info' });
-    info.innerHTML = '<div class="user-row__name">Solo Session</div>';
-    header.appendChild(info);
   }
 
-  const dateEl = Dom.create('div', {
-    className: 'request-card__meta',
-    textContent: `${TimeUtils.formatDate(date)} at ${TimeUtils.formatTime(date)}`
+  const dur = Dom.create('div', {
+    className: 'request-card__time',
+    textContent: TimeUtils.formatMinutes(durationMinutes)
   });
-  header.appendChild(dateEl);
+  header.appendChild(dur);
 
-  let outcomeLabel = '';
-  let timeClass = '';
-  card.style.opacity = '0.7';
+  // Timeline events
+  const timeline = document.createElement('div');
+  timeline.className = 'session-timeline';
+  events.forEach(evt => {
+    const line = Dom.create('div', { className: 'session-timeline__event', textContent: evt });
+    timeline.appendChild(line);
+  });
 
-  if (outcome === 'waiting_left') {
-    outcomeLabel = 'You left while waiting';
+  // Focus time summary
+  const summary = document.createElement('div');
+  summary.className = 'past-session__time';
+
+  let outcomeLabel, timeClass;
+  if (!sessionStarted) {
+    outcomeLabel = 'Not started';
     timeClass = 'text-muted';
-  } else if (outcome === SESSION_STATES.LEFT_EARLY) {
-    outcomeLabel = 'Left Early';
-    timeClass = 'text-red';
-  } else if (outcome === SESSION_STATES.COMPLETED) {
-    outcomeLabel = 'Completed';
-    timeClass = 'text-green';
   } else {
-    outcomeLabel = 'Outdid!';
-    timeClass = 'text-green';
+    const outcome = TimeUtils.getOutcome(focusSeconds, targetSeconds);
+    if (outcome === SESSION_STATES.LEFT_EARLY) {
+      outcomeLabel = 'Left Early';
+      timeClass = 'text-red';
+    } else if (outcome === SESSION_STATES.COMPLETED) {
+      outcomeLabel = 'Completed';
+      timeClass = 'text-green';
+    } else {
+      outcomeLabel = 'Outdid!';
+      timeClass = 'text-green';
+    }
   }
 
-  const timeRow = document.createElement('div');
-  timeRow.className = 'past-session__time';
-  timeRow.innerHTML = `
+  summary.innerHTML = `
     <span class="past-session__label">${outcomeLabel}</span>
     <span class="past-session__focus">
       <span class="${timeClass}">${TimeUtils.formatTimerLong(focusSeconds)}</span>
@@ -503,9 +486,9 @@ function buildPastSessionCard({ partner, date, focusSeconds, targetSeconds, dura
     </span>
   `;
 
+  // Delete
   const actions = document.createElement('div');
   actions.className = 'request-card__actions';
-
   const deleteBtn = Dom.create('button', { className: 'icon-btn-ghost' });
   deleteBtn.innerHTML = '<img src="../assets/icons/delete.svg" alt="Delete" width="22" height="22">';
   deleteBtn.addEventListener('click', async () => {
@@ -515,7 +498,8 @@ function buildPastSessionCard({ partner, date, focusSeconds, targetSeconds, dura
   actions.appendChild(deleteBtn);
 
   card.appendChild(header);
-  card.appendChild(timeRow);
+  card.appendChild(timeline);
+  card.appendChild(summary);
   card.appendChild(actions);
   return card;
 }

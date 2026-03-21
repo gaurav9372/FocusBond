@@ -117,6 +117,21 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ---- Session Timeline ---- */
+.session-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: var(--spacing-xs);
+  border-left: 2px solid var(--bg-input);
+}
+
+.session-timeline__event {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  padding-left: var(--spacing-sm);
+}
+
 /* ---- New Session Modal ---- */
 .modal-overlay {
   position: fixed;
