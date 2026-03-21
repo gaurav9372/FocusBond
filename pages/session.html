@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FocusBond — Session</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/pages/session.css">
+</head>
+<body>
+  <div class="container">
+
+    <!-- ========== WAITING / ACTIVE STATE ========== -->
+    <div id="sessionLive" class="page-content">
+      <!-- Session Info -->
+      <div class="session-header">
+        <div class="session-header__number" id="sessionNumber">Session 1</div>
+        <div class="session-header__date" id="sessionDate">03/21/2026, Sat</div>
+      </div>
+
+      <!-- Time Range -->
+      <div>
+        <div class="session-time-range">
+          <span id="timeStart">08:00 PM</span>
+          <span id="timeEnd">09:00 PM</span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <!-- Timer -->
+        <div class="session-timer">
+          <span class="session-timer__elapsed" id="timerElapsed">00:00</span>
+          <span class="session-timer__target" id="timerTarget">01:00</span>
+        </div>
+      </div>
+
+      <!-- Participants -->
+      <div class="session-participants" id="participantsList">
+        <!-- Dynamic: participant rows with badges rendered here -->
+      </div>
+    </div>
+
+    <!-- ========== OUTCOME STATE ========== -->
+    <div id="sessionOutcome" class="page-content hidden">
+      <div class="session-outcome">
+        <div class="emoji-display" id="outcomeEmoji">&#129395;</div>
+        <div class="session-outcome__title" id="outcomeTitle">Session Completed</div>
+
+        <div>
+          <div class="session-outcome__label">Your Focus Time</div>
+          <div class="session-outcome__time" id="outcomeTime">
+            <span id="outcomeFocus">01:00</span> <span>| </span><span id="outcomeTarget">01:00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer (always visible) -->
+    <div class="page-footer">
+      <!-- Live state buttons -->
+      <div id="liveActions">
+        <button class="btn btn-secondary btn-block" id="btnLeave" data-action="leave-session">Leave Session</button>
+        <button class="btn btn-danger btn-block hidden" id="btnStop" data-action="stop-session">Stop Session</button>
+      </div>
+
+      <!-- Outcome state buttons -->
+      <div id="outcomeActions" class="hidden stack stack-sm">
+        <button class="btn btn-primary btn-block" id="btnSubmit" data-action="submit-session">Submit</button>
+        <button class="btn btn-secondary btn-block" id="btnEditTime" data-action="edit-time">Edit Time</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/utils/storage.js"></script>
+  <script src="../js/utils/dom.js"></script>
+  <script src="../js/utils/time.js"></script>
+  <script src="../js/services/auth.js"></script>
+  <script src="../js/services/session.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/pages/session.js"></script>
+</body>
+</html>

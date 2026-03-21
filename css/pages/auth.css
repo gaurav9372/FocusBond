@@ -1,0 +1,38 @@
+/* ===========================
+   FocusBond — Auth Pages (Login + Register)
+   =========================== */
+
+.auth-page {
+  justify-content: center;
+}
+
+.auth-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  margin-bottom: var(--spacing-xl);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.auth-link {
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-top: var(--spacing-sm);
+}
+
+.auth-link a {
+  color: var(--color-purple);
+  font-weight: 500;
+}

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FocusBond — Edit Profile</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/pages/profile.css">
+</head>
+<body>
+  <div class="container">
+    <div class="page-header page-header--left">
+      <a href="./home.html" class="back-btn" aria-label="Back">
+        <img src="../assets/icons/back.svg" alt="Back">
+      </a>
+      <h1 class="page-header__title">Edit Profile</h1>
+    </div>
+
+    <div class="page-content">
+
+      <form id="profileForm" class="profile-form" novalidate>
+        <div class="input-group">
+          <label for="name">Name</label>
+          <input type="text" id="name" class="input" data-field="name" placeholder="Your name" maxlength="30">
+        </div>
+
+        <div class="input-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" class="input" data-field="username" placeholder="Your username" maxlength="15">
+        </div>
+
+        <div class="input-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" class="input input-muted" data-field="email" disabled>
+        </div>
+
+        <button type="button" class="btn btn-secondary btn-block" id="changePasswordBtn">Change Password</button>
+      </form>
+    </div>
+
+    <div class="page-footer">
+      <button type="submit" form="profileForm" class="btn btn-primary btn-block">Save</button>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal-overlay hidden" id="passwordModal">
+      <div class="modal">
+        <div class="modal__header">
+          <h2 class="modal__title">Change Password</h2>
+          <button class="modal__close" id="modalClose" aria-label="Close">&times;</button>
+        </div>
+        <form id="passwordForm" class="modal__body" novalidate>
+          <div class="input-group">
+            <label for="newPassword">New Password</label>
+            <input type="password" id="newPassword" class="input" data-field="newPassword" placeholder="Enter new password">
+          </div>
+          <div class="input-group">
+            <label for="confirmNewPassword">Confirm Password</label>
+            <input type="password" id="confirmNewPassword" class="input" data-field="confirmNewPassword" placeholder="Re-enter new password">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Update Password</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/utils/storage.js"></script>
+  <script src="../js/utils/dom.js"></script>
+  <script src="../js/utils/validation.js"></script>
+  <script src="../js/services/auth.js"></script>
+  <script src="../js/services/user.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/pages/profile.js"></script>
+</body>
+</html>

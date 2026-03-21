@@ -1,0 +1,220 @@
+/* ===========================
+   FocusBond — Layout
+   =========================== */
+
+/* Page container — mobile-first, centered */
+.container {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Page header */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) 0;
+  margin-bottom: var(--spacing-md);
+}
+
+.page-header__title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+}
+
+.page-header__brand {
+  font-size: var(--font-size-sm);
+  color: var(--color-green);
+  font-weight: 600;
+}
+
+.page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* Page content — fills remaining space */
+.page-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* Page footer — actions pinned to bottom */
+.page-footer {
+  margin-top: auto;
+  padding-top: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* Flex utilities */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gap-xs { gap: var(--spacing-xs); }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+
+.flex-1 {
+  flex: 1;
+}
+
+/* Stack — vertical spacing between children */
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.stack-sm { gap: var(--spacing-sm); }
+.stack-md { gap: var(--spacing-md); }
+.stack-lg { gap: var(--spacing-lg); }
+
+/* Icon button (for + button, dark mode toggle, etc.) */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-purple);
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  transition: background-color var(--transition-fast);
+  cursor: pointer;
+  border: none;
+}
+
+.icon-btn:hover {
+  background-color: var(--color-purple-hover);
+}
+
+/* Dark mode toggle */
+.theme-toggle {
+  width: 40px;
+  height: 22px;
+  background-color: var(--bg-input);
+  border-radius: 11px;
+  position: relative;
+  cursor: pointer;
+  border: none;
+  transition: background-color var(--transition-fast);
+}
+
+.theme-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background-color: var(--text-secondary);
+  transition: transform var(--transition-fast), background-color var(--transition-fast);
+}
+
+.theme-toggle.active::after {
+  transform: translateX(18px);
+  background-color: var(--color-purple);
+}
+
+/* Request card (session invite on home page) */
+.request-card {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.request-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.request-card__time {
+  margin-left: auto;
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+}
+
+.request-card__meta {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.request-card__actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.request-card__actions .btn {
+  flex: 1;
+}
+
+/* Back button */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--text-muted);
+  background: none;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast);
+}
+
+.back-btn img {
+  width: 18px;
+  height: 18px;
+}
+
+.back-btn:hover {
+  border-color: var(--text-primary);
+}
+
+/* Header left-aligned variant */
+.page-header--left {
+  justify-content: flex-start;
+  gap: var(--spacing-md);
+}
+
+/* Responsive — tablet and up */
+@media (min-width: 768px) {
+  .container {
+    padding: var(--spacing-xl);
+  }
+}

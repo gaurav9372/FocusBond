@@ -1,0 +1,321 @@
+/* ===========================
+   FocusBond — Reusable Components
+   =========================== */
+
+/* ---- Buttons ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--color-purple);
+  color: var(--text-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-purple-hover);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--text-primary);
+}
+
+.btn-success {
+  background-color: var(--color-green);
+  color: var(--text-primary);
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: var(--color-green-hover);
+}
+
+.btn-danger {
+  background-color: transparent;
+  color: var(--color-red);
+  border-color: var(--color-red);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-red);
+  color: var(--text-primary);
+}
+
+.btn-block {
+  display: flex;
+  width: 100%;
+}
+
+.btn-sm {
+  padding: 8px 16px;
+  font-size: var(--font-size-sm);
+}
+
+/* ---- Inputs ---- */
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: var(--bg-input);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  transition: border-color var(--transition-fast);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.input:focus {
+  border-color: var(--color-purple);
+}
+
+.input-error {
+  border-color: var(--color-red);
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.input-group label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.input-group .error-text {
+  font-size: var(--font-size-xs);
+  color: var(--color-red);
+}
+
+/* ---- Cards ---- */
+.card {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* ---- Avatar ---- */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.avatar-sm {
+  width: 32px;
+  height: 32px;
+  font-size: var(--font-size-sm);
+}
+
+.avatar-md {
+  width: 40px;
+  height: 40px;
+  font-size: var(--font-size-md);
+}
+
+.avatar-lg {
+  width: 56px;
+  height: 56px;
+  font-size: var(--font-size-xl);
+}
+
+/* ---- Badges ---- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge-ready,
+.badge-active {
+  background-color: var(--color-green);
+  color: #fff;
+}
+
+.badge-waiting {
+  background-color: var(--color-yellow);
+  color: #000;
+}
+
+.badge-left {
+  background-color: var(--color-red);
+  color: #fff;
+}
+
+/* ---- Progress Bar ---- */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: var(--bg-input);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--color-green);
+  border-radius: 4px;
+  transition: width 1s linear;
+  width: 0%;
+}
+
+/* ---- Emoji Display ---- */
+.emoji-display {
+  font-size: 64px;
+  text-align: center;
+  line-height: 1;
+}
+
+/* ---- User Row (friend list, participant list) ---- */
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+}
+
+.user-row__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-row__name {
+  font-weight: 600;
+  font-size: var(--font-size-md);
+}
+
+.user-row__username {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.user-row__action {
+  flex-shrink: 0;
+}
+
+/* ---- Divider ---- */
+.divider {
+  height: 1px;
+  background-color: var(--bg-input);
+  border: none;
+  margin: var(--spacing-md) 0;
+}
+
+/* ---- Toast / Error Banner ---- */
+.toast {
+  position: fixed;
+  bottom: var(--spacing-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  z-index: 1000;
+  animation: toast-slide-up 0.3s ease;
+}
+
+.toast-error {
+  background-color: var(--color-red);
+  color: #fff;
+}
+
+.toast-success {
+  background-color: var(--color-green);
+  color: #fff;
+}
+
+@keyframes toast-slide-up {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ---- Loading Spinner ---- */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--bg-input);
+  border-top-color: var(--color-purple);
+  border-radius: var(--radius-full);
+  animation: spin 0.6s linear infinite;
+  margin: var(--spacing-lg) auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Section Header ---- */
+.section-title {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--spacing-sm);
+}
+
+/* ---- Time Display ---- */
+.time-display {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-display--red {
+  color: var(--color-red);
+}
+
+.time-display--green {
+  color: var(--color-green);
+}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FocusBond — My Friends</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/pages/friends.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="page-header">
+      <a href="./home.html" class="back-btn" aria-label="Back">
+        <img src="../assets/icons/back.svg" alt="Back">
+      </a>
+      <h1 class="page-header__title">My Friends</h1>
+      <div class="page-header__actions">
+        <a href="./add-friend.html" class="icon-btn" aria-label="Add Friend">+</a>
+      </div>
+    </div>
+
+    <!-- Friends List -->
+    <div class="page-content">
+      <div id="friendsList" class="friends-list">
+        <!-- Dynamic: friend rows rendered here -->
+        <div class="friends-empty">No friends yet. Tap + to add friends!</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/utils/storage.js"></script>
+  <script src="../js/utils/dom.js"></script>
+  <script src="../js/services/auth.js"></script>
+  <script src="../js/services/friends.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/pages/friends.js"></script>
+</body>
+</html>
