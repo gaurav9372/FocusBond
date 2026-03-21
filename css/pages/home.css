@@ -126,6 +126,17 @@
   z-index: 10;
 }
 
+.home-footer::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(to bottom, transparent, var(--bg-primary));
+  pointer-events: none;
+}
+
 /* ---- Past session card variants ---- */
 .request-card--success {
   border-left: 3px solid var(--color-green);

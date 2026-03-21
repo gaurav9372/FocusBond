@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let pendingInvites = [];
   let startTimestamp = null;
   let hasLeft = false;
+  let partnerLeftNotified = false;
   const targetSeconds = session.duration_minutes * 60;
 
   // DOM refs
@@ -123,8 +124,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       showActiveState();
     }
 
-    // Beep + toast when partner leaves during active session
-    if (session.status === 'active' && payload.new && payload.new.status === 'left' && payload.new.user_id !== user.id) {
+    // Beep + toast when partner leaves during active session (once only)
+    if (session.status === 'active' && !partnerLeftNotified && payload.new && payload.new.status === 'left' && payload.new.user_id !== user.id) {
+      partnerLeftNotified = true;
       const partnerP = participants.find(p => p.user_id === payload.new.user_id);
       const partnerName = partnerP && partnerP.profile ? partnerP.profile.name : 'Partner';
       playBeep();
