@@ -443,6 +443,8 @@ function buildPastSessionCard({ partner, date, focusSeconds, targetSeconds, dura
 
   let outcomeLabel = '';
   let timeClass = '';
+  card.style.opacity = '0.7';
+
   if (outcome === 'waiting_left') {
     outcomeLabel = 'You left while waiting';
     timeClass = 'text-muted';
