@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let elapsedSeconds = 0;
   let realtimeChannel = null;
   let pendingInvites = [];
+  let startTimestamp = null;
   const targetSeconds = session.duration_minutes * 60;
 
   // DOM refs
@@ -86,6 +87,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadParticipants();
     renderParticipants();
 
+    // Re-fetch session status from DB to stay in sync
+    const { data: freshSession } = await SessionService.getSession(sessionId);
+    if (freshSession) {
+      session.status = freshSession.status;
+      session.started_at = freshSession.started_at;
+    }
+
     // Check if host left during waiting — redirect others
     if (session.status === 'waiting') {
       const host = participants.find(p => p.user_id === session.created_by);
@@ -103,6 +111,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         await SessionService.updateMyStatus(sessionId, user.id, 'active');
         showActiveState();
       }
+    }
+
+    // If session became active (triggered by the other user), start timer
+    if (session.status === 'active' && !timerInterval) {
+      await SessionService.updateMyStatus(sessionId, user.id, 'active');
+      showActiveState();
     }
   });
 
@@ -190,7 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     Dom.show(els.btnLeave);
     Dom.hide(els.btnStop);
 
-    els.timerElapsed.textContent = '00:00';
+    els.timerElapsed.textContent = '00:00:00';
     els.timerElapsed.classList.remove('text-red', 'text-green');
     els.progressFill.style.width = '0%';
 
@@ -235,14 +249,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     Dom.hide(els.btnLeave);
     Dom.show(els.btnStop);
 
-    // Calculate elapsed if session already started
+    // Calculate start timestamp
     if (session.started_at) {
-      const startedAt = new Date(session.started_at).getTime();
-      elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+      startTimestamp = new Date(session.started_at).getTime();
 
       els.timeStart.textContent = TimeUtils.formatTime(session.started_at);
-      const endTime = new Date(startedAt + targetSeconds * 1000);
+      const endTime = new Date(startTimestamp + targetSeconds * 1000);
       els.timeEnd.textContent = TimeUtils.formatTime(endTime.toISOString());
+    } else {
+      startTimestamp = Date.now();
     }
 
     renderParticipants();
@@ -251,6 +266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Stop session button
     els.btnStop.onclick = async () => {
       stopTimer();
+      elapsedSeconds = Math.floor((Date.now() - startTimestamp) / 1000);
       await SessionService.updateMyStatus(sessionId, user.id, 'left');
       showOutcome(elapsedSeconds);
     };
@@ -259,33 +275,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ---- TIMER ----
 
   function startTimer() {
-    updateTimerDisplay();
-    timerInterval = setInterval(() => {
-      elapsedSeconds++;
-      updateTimerDisplay();
-    }, 1000);
+    function tick() {
+      const elapsedMs = Date.now() - startTimestamp;
+      elapsedSeconds = Math.floor(elapsedMs / 1000);
+      const centis = Math.floor((elapsedMs % 1000) / 10);
+
+      const mins = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+      const secs = (elapsedSeconds % 60).toString().padStart(2, '0');
+      const cs = centis.toString().padStart(2, '0');
+      els.timerElapsed.textContent = `${mins}:${secs}:${cs}`;
+
+      const percent = TimeUtils.progressPercent(elapsedSeconds, targetSeconds);
+      els.progressFill.style.width = `${percent}%`;
+
+      if (elapsedSeconds >= targetSeconds) {
+        els.timerElapsed.classList.add('text-green');
+        els.timerElapsed.classList.remove('text-red');
+        els.progressFill.style.backgroundColor = 'var(--color-green)';
+      } else {
+        els.timerElapsed.classList.remove('text-green');
+      }
+
+      timerInterval = requestAnimationFrame(tick);
+    }
+    timerInterval = requestAnimationFrame(tick);
   }
 
   function stopTimer() {
     if (timerInterval) {
-      clearInterval(timerInterval);
+      cancelAnimationFrame(timerInterval);
       timerInterval = null;
-    }
-  }
-
-  function updateTimerDisplay() {
-    els.timerElapsed.textContent = TimeUtils.formatTimerLong(elapsedSeconds);
-
-    const percent = TimeUtils.progressPercent(elapsedSeconds, targetSeconds);
-    els.progressFill.style.width = `${percent}%`;
-
-    // Color the timer based on progress
-    if (elapsedSeconds >= targetSeconds) {
-      els.timerElapsed.classList.add('text-green');
-      els.timerElapsed.classList.remove('text-red');
-      els.progressFill.style.backgroundColor = 'var(--color-green)';
-    } else {
-      els.timerElapsed.classList.remove('text-green');
     }
   }
 

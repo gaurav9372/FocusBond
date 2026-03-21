@@ -464,6 +464,7 @@ function buildTimelineCard({ partnerProfile, requestTime, durationMinutes, focus
   const card = document.createElement('div');
   card.className = 'request-card';
   card.style.opacity = '0.7';
+  card.classList.add(sessionStarted ? 'request-card--success' : 'request-card--failed');
 
   // Header: partner + duration
   const header = document.createElement('div');

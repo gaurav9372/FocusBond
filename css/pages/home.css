@@ -117,6 +117,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ---- Past session card variants ---- */
+.request-card--success {
+  border-left: 3px solid var(--color-green);
+}
+
+.request-card--failed {
+  border-left: 3px solid var(--color-red);
+}
+
 /* ---- Session Timeline ---- */
 .session-timeline {
   display: flex;
