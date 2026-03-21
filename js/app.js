@@ -37,7 +37,11 @@ async function redirectIfLoggedIn() {
 // Listen for auth state changes
 db.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_OUT') {
-    window.location.href = resolveAppPath('index.html');
+    const currentPath = window.location.pathname;
+    const isPublicPage = PUBLIC_PAGES.some(p => currentPath.endsWith(p));
+    if (!isPublicPage) {
+      window.location.href = resolveAppPath('index.html');
+    }
   }
 });
 
