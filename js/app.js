@@ -34,14 +34,17 @@ async function redirectIfLoggedIn() {
   }
 }
 
+// Track if user was ever signed in this page load
+let wasSignedIn = false;
+
 // Listen for auth state changes
 db.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_OUT') {
-    const currentPath = window.location.pathname;
-    const isPublicPage = PUBLIC_PAGES.some(p => currentPath.endsWith(p));
-    if (!isPublicPage) {
-      window.location.href = resolveAppPath('index.html');
-    }
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    wasSignedIn = true;
+  }
+  // Only redirect on SIGNED_OUT if user was previously signed in (actual logout)
+  if (event === 'SIGNED_OUT' && wasSignedIn) {
+    window.location.href = resolveAppPath('index.html');
   }
 });
 
