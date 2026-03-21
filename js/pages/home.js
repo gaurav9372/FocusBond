@@ -43,6 +43,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ---- Session requests ----
   await loadSessionRequests(user.id);
 
+  // ---- Past sessions ----
+  await loadPastSessions(user.id);
+
   // ---- New Session modal ----
   const modal = Dom.getById('newSessionModal');
   const friendPicker = Dom.getById('friendPickerList');
@@ -285,4 +288,140 @@ async function loadSessionRequests(userId) {
 
     container.appendChild(card);
   });
+}
+
+async function loadPastSessions(userId) {
+  const container = Dom.getById('pastSessions');
+
+  // Get sessions where user is a participant, not hidden, and session is completed
+  const { data: myParticipations, error } = await db
+    .from('session_participants')
+    .select(`
+      id,
+      focus_time_seconds,
+      status,
+      hidden,
+      session_id,
+      session:sessions!session_participants_session_id_fkey(
+        id,
+        duration_minutes,
+        status,
+        created_at,
+        started_at
+      )
+    `)
+    .eq('user_id', userId)
+    .eq('hidden', false)
+    .order('joined_at', { ascending: false });
+
+  if (error) return;
+
+  // Filter to only completed/ended sessions (not waiting or active)
+  const pastSessions = (myParticipations || []).filter(p =>
+    p.session && (p.session.status === 'completed' || p.status === 'left')
+  );
+
+  if (pastSessions.length === 0) {
+    container.innerHTML = '<div class="home-empty">No past sessions yet</div>';
+    return;
+  }
+
+  Dom.clear(container);
+
+  // For each past session, load the other participants
+  for (const entry of pastSessions) {
+    const { data: allParticipants } = await db
+      .from('session_participants')
+      .select(`
+        user_id,
+        focus_time_seconds,
+        status,
+        profile:profiles!session_participants_user_id_fkey(name, username, avatar_color)
+      `)
+      .eq('session_id', entry.session_id);
+
+    const partner = (allParticipants || []).find(p => p.user_id !== userId);
+    const targetSeconds = entry.session.duration_minutes * 60;
+    const focusSeconds = entry.focus_time_seconds || 0;
+    const outcome = TimeUtils.getOutcome(focusSeconds, targetSeconds);
+
+    const card = document.createElement('div');
+    card.className = 'request-card';
+
+    // Header row: partner info + date
+    const header = document.createElement('div');
+    header.className = 'request-card__header';
+
+    if (partner && partner.profile) {
+      const avatar = Dom.buildAvatar(partner.profile.name, partner.profile.avatar_color, 'sm');
+      const info = document.createElement('div');
+      info.className = 'user-row__info';
+      info.innerHTML = `
+        <div class="user-row__name">${partner.profile.name}</div>
+        <div class="user-row__username">${partner.profile.username}</div>
+      `;
+      header.appendChild(avatar);
+      header.appendChild(info);
+    } else {
+      const info = Dom.create('div', { className: 'user-row__info' });
+      info.innerHTML = '<div class="user-row__name">Solo Session</div>';
+      header.appendChild(info);
+    }
+
+    const dateEl = Dom.create('div', {
+      className: 'request-card__meta',
+      textContent: TimeUtils.formatDate(entry.session.created_at)
+    });
+    header.appendChild(dateEl);
+
+    // Focus time row
+    const timeRow = document.createElement('div');
+    timeRow.className = 'past-session__time';
+
+    let outcomeLabel = '';
+    let timeClass = '';
+    if (outcome === SESSION_STATES.LEFT_EARLY) {
+      outcomeLabel = 'Left Early';
+      timeClass = 'text-red';
+    } else if (outcome === SESSION_STATES.COMPLETED) {
+      outcomeLabel = 'Completed';
+      timeClass = 'text-green';
+    } else {
+      outcomeLabel = 'Outdid!';
+      timeClass = 'text-green';
+    }
+
+    timeRow.innerHTML = `
+      <span class="past-session__label">${outcomeLabel}</span>
+      <span class="past-session__focus">
+        <span class="${timeClass}">${TimeUtils.formatTimerLong(focusSeconds)}</span>
+        <span class="text-muted"> | ${TimeUtils.formatMinutes(entry.session.duration_minutes)}</span>
+      </span>
+    `;
+
+    // Delete button
+    const actions = document.createElement('div');
+    actions.className = 'request-card__actions';
+
+    const deleteBtn = Dom.create('button', { className: 'icon-btn-ghost' });
+    deleteBtn.innerHTML = '<img src="../assets/icons/delete.svg" alt="Delete" width="22" height="22">';
+    deleteBtn.addEventListener('click', async () => {
+      deleteBtn.style.opacity = '0.5';
+      await db
+        .from('session_participants')
+        .update({ hidden: true })
+        .eq('id', entry.id);
+      card.remove();
+      if (container.children.length === 0) {
+        container.innerHTML = '<div class="home-empty">No past sessions yet</div>';
+      }
+    });
+
+    actions.appendChild(deleteBtn);
+
+    card.appendChild(header);
+    card.appendChild(timeRow);
+    card.appendChild(actions);
+    container.appendChild(card);
+  }
 }

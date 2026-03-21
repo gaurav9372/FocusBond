@@ -99,6 +99,24 @@
   margin: var(--spacing-xs) 0;
 }
 
+/* ---- Past Sessions ---- */
+.past-session__time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.past-session__label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.past-session__focus {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---- New Session Modal ---- */
 .modal-overlay {
   position: fixed;
