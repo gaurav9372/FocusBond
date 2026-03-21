@@ -48,34 +48,65 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ---- New Session modal ----
   const modal = Dom.getById('newSessionModal');
-  const friendPicker = Dom.getById('friendPickerList');
+  const dropdown = Dom.getById('friendDropdown');
+  const dropdownTrigger = Dom.getById('friendDropdownTrigger');
+  const dropdownMenu = Dom.getById('friendDropdownMenu');
   const sendBtn = Dom.getById('sendSessionBtn');
   let selectedFriendId = null;
+
+  // Toggle dropdown
+  dropdownTrigger.addEventListener('click', () => {
+    dropdownMenu.classList.toggle('hidden');
+    dropdown.classList.toggle('open');
+  });
+
+  // Close dropdown on outside click
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target)) {
+      dropdownMenu.classList.add('hidden');
+      dropdown.classList.remove('open');
+    }
+  });
 
   Dom.getById('newSessionBtn').addEventListener('click', async () => {
     Dom.show(modal);
     selectedFriendId = null;
     sendBtn.disabled = true;
+    dropdownTrigger.querySelector('.custom-dropdown__text').textContent = 'Select a friend';
+    dropdownMenu.classList.add('hidden');
+    dropdown.classList.remove('open');
 
-    // Load friends into picker
+    // Load friends into dropdown
     const { data: friends } = await FriendsService.getMyFriends(user.id);
-    Dom.clear(friendPicker);
+    Dom.clear(dropdownMenu);
 
     if (!friends || friends.length === 0) {
-      friendPicker.innerHTML = '<div class="home-empty" style="padding: var(--spacing-md) 0;">No friends yet</div>';
+      dropdownMenu.innerHTML = '<div class="custom-dropdown__item custom-dropdown__empty">No friends yet</div>';
       return;
     }
 
     friends.forEach(friend => {
-      const row = Dom.buildUserRow(friend);
-      row.addEventListener('click', () => {
-        // Deselect all
-        friendPicker.querySelectorAll('.user-row').forEach(r => r.classList.remove('selected'));
-        row.classList.add('selected');
+      const item = document.createElement('div');
+      item.className = 'custom-dropdown__item';
+      const initial = (friend.name || '?')[0].toUpperCase();
+      item.innerHTML = `
+        <div class="avatar avatar-sm" style="background:var(--color-purple);color:#fff;font-size:0.75rem;">${initial}</div>
+        <div class="custom-dropdown__info">
+          <span class="custom-dropdown__name">${friend.name}</span>
+          <span class="custom-dropdown__username">${friend.username}</span>
+        </div>
+      `;
+      item.addEventListener('click', () => {
         selectedFriendId = friend.id;
         sendBtn.disabled = false;
+        dropdownTrigger.querySelector('.custom-dropdown__text').innerHTML = `
+          <div class="avatar avatar-xs" style="background:var(--color-purple);color:#fff;font-size:0.6rem;">${initial}</div>
+          ${friend.name}
+        `;
+        dropdownMenu.classList.add('hidden');
+        dropdown.classList.remove('open');
       });
-      friendPicker.appendChild(row);
+      dropdownMenu.appendChild(item);
     });
   });
 

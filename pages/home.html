@@ -69,8 +69,12 @@
         <div class="modal__body">
           <div class="input-group">
             <label>Choose Friend</label>
-            <div id="friendPickerList" class="friend-picker">
-              <div class="home-empty">Loading friends...</div>
+            <div class="custom-dropdown" id="friendDropdown">
+              <button type="button" class="custom-dropdown__trigger" id="friendDropdownTrigger">
+                <span class="custom-dropdown__text">Select a friend</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="custom-dropdown__menu hidden" id="friendDropdownMenu"></div>
             </div>
           </div>
           <div class="input-group">
