@@ -13,25 +13,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     .eq('id', user.id)
     .single();
 
+  const avatarBtn = Dom.getById('avatarBtn');
   if (profile) {
     Dom.getById('userName').textContent = profile.name;
-
-    const avatarBtn = Dom.getById('avatarBtn');
     avatarBtn.textContent = profile.name.charAt(0).toUpperCase();
     avatarBtn.style.backgroundColor = profile.avatar_color || '#8b5cf6';
   }
 
   // ---- Avatar dropdown ----
-  const avatarBtn = Dom.getById('avatarBtn');
-  const dropdown = Dom.getById('avatarDropdown');
+  const avatarDropdown = Dom.getById('avatarDropdown');
 
   avatarBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    dropdown.classList.toggle('hidden');
+    avatarDropdown.classList.toggle('hidden');
   });
 
   document.addEventListener('click', () => {
-    dropdown.classList.add('hidden');
+    avatarDropdown.classList.add('hidden');
   });
 
   // ---- Friend requests notification dot ----
@@ -48,23 +46,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ---- New Session modal ----
   const modal = Dom.getById('newSessionModal');
-  const dropdown = Dom.getById('friendDropdown');
-  const dropdownTrigger = Dom.getById('friendDropdownTrigger');
-  const dropdownMenu = Dom.getById('friendDropdownMenu');
+  const friendDD = Dom.getById('friendDropdown');
+  const friendDDTrigger = Dom.getById('friendDropdownTrigger');
+  const friendDDMenu = Dom.getById('friendDropdownMenu');
   const sendBtn = Dom.getById('sendSessionBtn');
   let selectedFriendId = null;
 
   // Toggle dropdown
-  dropdownTrigger.addEventListener('click', () => {
-    dropdownMenu.classList.toggle('hidden');
-    dropdown.classList.toggle('open');
+  friendDDTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    friendDDMenu.classList.toggle('hidden');
+    friendDD.classList.toggle('open');
   });
 
   // Close dropdown on outside click
   document.addEventListener('click', (e) => {
-    if (!dropdown.contains(e.target)) {
-      dropdownMenu.classList.add('hidden');
-      dropdown.classList.remove('open');
+    if (!friendDD.contains(e.target)) {
+      friendDDMenu.classList.add('hidden');
+      friendDD.classList.remove('open');
     }
   });
 
@@ -72,16 +71,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     Dom.show(modal);
     selectedFriendId = null;
     sendBtn.disabled = true;
-    dropdownTrigger.querySelector('.custom-dropdown__text').textContent = 'Select a friend';
-    dropdownMenu.classList.add('hidden');
-    dropdown.classList.remove('open');
+    friendDDTrigger.querySelector('.custom-dropdown__text').textContent = 'Select a friend';
+    friendDDMenu.classList.add('hidden');
+    friendDD.classList.remove('open');
 
     // Load friends into dropdown
     const { data: friends } = await FriendsService.getMyFriends(user.id);
-    Dom.clear(dropdownMenu);
+    Dom.clear(friendDDMenu);
 
     if (!friends || friends.length === 0) {
-      dropdownMenu.innerHTML = '<div class="custom-dropdown__item custom-dropdown__empty">No friends yet</div>';
+      friendDDMenu.innerHTML = '<div class="custom-dropdown__item custom-dropdown__empty">No friends yet</div>';
       return;
     }
 
@@ -99,14 +98,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       item.addEventListener('click', () => {
         selectedFriendId = friend.id;
         sendBtn.disabled = false;
-        dropdownTrigger.querySelector('.custom-dropdown__text').innerHTML = `
+        friendDDTrigger.querySelector('.custom-dropdown__text').innerHTML = `
           <div class="avatar avatar-xs" style="background:var(--color-purple);color:#fff;font-size:0.6rem;">${initial}</div>
           ${friend.name}
         `;
-        dropdownMenu.classList.add('hidden');
-        dropdown.classList.remove('open');
+        friendDDMenu.classList.add('hidden');
+        friendDD.classList.remove('open');
       });
-      dropdownMenu.appendChild(item);
+      friendDDMenu.appendChild(item);
     });
   });
 
