@@ -443,7 +443,10 @@ function buildPastSessionCard({ partner, date, focusSeconds, targetSeconds, dura
 
   let outcomeLabel = '';
   let timeClass = '';
-  if (outcome === SESSION_STATES.LEFT_EARLY) {
+  if (outcome === 'waiting_left') {
+    outcomeLabel = 'You left while waiting';
+    timeClass = 'text-muted';
+  } else if (outcome === SESSION_STATES.LEFT_EARLY) {
     outcomeLabel = 'Left Early';
     timeClass = 'text-red';
   } else if (outcome === SESSION_STATES.COMPLETED) {
