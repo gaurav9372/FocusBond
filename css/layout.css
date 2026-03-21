@@ -209,7 +209,7 @@
 /* Header left-aligned variant */
 .page-header--left {
   justify-content: flex-start;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 /* Responsive — tablet and up */
