@@ -184,3 +184,90 @@ CREATE POLICY "session_requests_update" ON session_requests
 -- Enable realtime for session_participants (for live session updates)
 ALTER PUBLICATION supabase_realtime ADD TABLE session_participants;
 ALTER PUBLICATION supabase_realtime ADD TABLE session_requests;
+
+
+-- ============================================================
+-- PRODUCTION PATCH (2026-03-22) -- RUN THIS SECTION ONLY
+-- ============================================================
+-- Purpose:
+-- 1) Add missing session_participants.hidden column used by app code
+-- 2) Allow session_requests.status = 'cancelled'
+-- 3) Add SECURITY DEFINER helper to avoid recursive RLS checks
+-- 4) Update session_requests RLS so sender can cancel and both sides can delete
+--
+-- This patch is intended for already-live databases.
+-- It is safe to run multiple times.
+
+BEGIN;
+
+-- 1) Missing column used by home timeline hiding
+ALTER TABLE public.session_participants
+  ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT FALSE;
+
+CREATE INDEX IF NOT EXISTS idx_session_participants_hidden
+  ON public.session_participants(hidden);
+
+-- 2) Expand allowed statuses for session requests
+ALTER TABLE public.session_requests
+  DROP CONSTRAINT IF EXISTS session_requests_status_check;
+
+ALTER TABLE public.session_requests
+  ADD CONSTRAINT session_requests_status_check
+  CHECK (status IN ('pending', 'accepted', 'rejected', 'cancelled'));
+
+-- 3) SECURITY DEFINER helper for safe participant membership checks in policies
+CREATE OR REPLACE FUNCTION public.is_session_participant(p_session_id UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.session_participants sp
+    WHERE sp.session_id = p_session_id
+      AND sp.user_id = auth.uid()
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.is_session_participant(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_session_participant(UUID) TO authenticated;
+
+-- Replace select policies with function-based checks (avoids recursive policy lookups)
+DROP POLICY IF EXISTS "sessions_select" ON public.sessions;
+CREATE POLICY "sessions_select" ON public.sessions
+  FOR SELECT TO authenticated
+  USING (
+    created_by = auth.uid()
+    OR public.is_session_participant(id)
+  );
+
+DROP POLICY IF EXISTS "session_participants_select" ON public.session_participants;
+CREATE POLICY "session_participants_select" ON public.session_participants
+  FOR SELECT TO authenticated
+  USING (
+    user_id = auth.uid()
+    OR public.is_session_participant(session_id)
+  );
+
+-- 4) session_requests policy fixes for app flows
+DROP POLICY IF EXISTS "session_requests_update" ON public.session_requests;
+DROP POLICY IF EXISTS "session_requests_update_receiver" ON public.session_requests;
+DROP POLICY IF EXISTS "session_requests_cancel_sender" ON public.session_requests;
+
+CREATE POLICY "session_requests_update_receiver" ON public.session_requests
+  FOR UPDATE TO authenticated
+  USING (auth.uid() = receiver_id)
+  WITH CHECK (auth.uid() = receiver_id);
+
+CREATE POLICY "session_requests_cancel_sender" ON public.session_requests
+  FOR UPDATE TO authenticated
+  USING (auth.uid() = sender_id)
+  WITH CHECK (auth.uid() = sender_id AND status = 'cancelled');
+
+DROP POLICY IF EXISTS "session_requests_delete" ON public.session_requests;
+CREATE POLICY "session_requests_delete" ON public.session_requests
+  FOR DELETE TO authenticated
+  USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+
+COMMIT;
