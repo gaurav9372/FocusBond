@@ -35,8 +35,10 @@
 }
 
 .page-header__title {
-  font-size: var(--font-size-xl);
-  font-weight: 700;
+  font-size: 1.75rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
 }
 
 .page-header__brand {

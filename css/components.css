@@ -304,10 +304,10 @@
 
 /* ---- Section Header ---- */
 .section-title {
-  font-size: var(--font-size-sm);
+  font-size: 0.8125rem;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   margin-bottom: var(--spacing-sm);
 }
 
@@ -316,6 +316,7 @@
   font-size: var(--font-size-2xl);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
 }
 
 .time-display--red {
@@ -414,11 +415,13 @@
   font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .custom-dropdown__username {
   font-size: var(--font-size-xs);
   color: var(--text-muted);
+  letter-spacing: 0.01em;
 }
 
 .custom-dropdown__empty {
