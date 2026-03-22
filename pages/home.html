@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="../css/pages/home.css">
 </head>
 <body>
-  <div class="container has-bottom-nav">
+  <div class="container has-bottom-nav has-home-action">
     <!-- Header -->
     <div class="page-header">
       <div>
@@ -50,13 +50,11 @@
       </div>
     </div>
 
-    <!-- Footer -->
-    <div class="page-footer home-footer">
-      <button class="btn btn-primary btn-block" id="newSessionBtn">New Session</button>
-      <a href="./friends.html" class="btn btn-secondary btn-block btn-with-dot" id="manageFriendsBtn">
-        Manage Friends
-        <span class="notif-dot hidden" id="friendsDot"></span>
-      </a>
+    <div class="home-action-dock">
+      <button type="button" class="home-action-dock__btn" id="newSessionBtn">
+        <img src="../assets/icons/plus.svg" class="home-action-dock__icon" alt="" aria-hidden="true">
+        <span>New Session</span>
+      </button>
     </div>
 
     <!-- New Session Modal -->
@@ -105,9 +103,6 @@
       </a>
     </nav>
 
-    <button type="button" class="session-fab" id="bottomNavNewSession" aria-label="New Session">
-      <img src="../assets/icons/plus.svg" class="bottom-nav__icon" alt="" aria-hidden="true">
-    </button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

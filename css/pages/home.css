@@ -124,24 +124,43 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Sticky footer on home page */
-.home-footer {
-  position: sticky;
-  bottom: 0;
-  padding: var(--spacing-md) 0 var(--spacing-lg);
-  background-color: var(--bg-primary);
-  z-index: 10;
+/* Home action dock */
+.has-home-action {
+  padding-bottom: 220px;
 }
 
-.home-footer::before {
-  content: '';
-  position: absolute;
-  top: -60px;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: linear-gradient(to bottom, transparent, var(--bg-primary));
-  pointer-events: none;
+.home-action-dock {
+  position: fixed;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%);
+  width: min(100vw, 420px);
+  display: flex;
+  justify-content: center;
+  z-index: 121;
+}
+
+.home-action-dock__btn {
+  height: 56px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, #8f2ec0 0%, #73219d 100%);
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 620;
+  letter-spacing: -0.015em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0 16px;
+  box-shadow: 0 14px 26px rgba(65, 20, 96, 0.42);
+}
+
+.home-action-dock__icon {
+  width: 22px;
+  height: 22px;
 }
 
 /* ---- Past session card variants ---- */
@@ -248,34 +267,9 @@
   border-radius: var(--radius-md);
 }
 
-.has-bottom-nav .home-footer {
-  bottom: 96px;
-}
-
-.has-bottom-nav .home-footer::before {
-  height: 72px;
-  top: -72px;
-}
-
-.session-fab {
-  position: fixed;
-  right: calc((100vw - min(94vw, 420px)) / 2 + 18px);
-  bottom: 104px;
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: linear-gradient(180deg, #9228c8 0%, #77189f 100%);
-  box-shadow: 0 12px 18px rgba(66, 11, 93, 0.45);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 130;
-}
-
-.session-fab .bottom-nav__icon {
-  width: 30px;
-  height: 30px;
-  opacity: 1;
+@media (max-width: 380px) {
+  .home-action-dock__btn {
+    min-width: 0;
+    width: calc(100% - 40px);
+  }
 }

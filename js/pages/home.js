@@ -50,8 +50,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const friendDDTrigger = Dom.getById('friendDropdownTrigger');
   const friendDDMenu = Dom.getById('friendDropdownMenu');
   const sendBtn = Dom.getById('sendSessionBtn');
-  const bottomNavNewSessionBtn = Dom.getById('bottomNavNewSession');
-  const shouldOpenNewSession = new URLSearchParams(window.location.search).get('openNewSession') === '1';
   let selectedFriendId = null;
 
   // Toggle dropdown
@@ -113,13 +111,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   Dom.getById('newSessionBtn').addEventListener('click', openNewSessionModal);
-  if (bottomNavNewSessionBtn) {
-    bottomNavNewSessionBtn.addEventListener('click', openNewSessionModal);
-  }
-  if (shouldOpenNewSession) {
-    await openNewSessionModal();
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
 
   // Close modal
   Dom.getById('sessionModalClose').addEventListener('click', () => Dom.hide(modal));
