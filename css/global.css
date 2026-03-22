@@ -9,6 +9,8 @@
   --bg-secondary: #16213e;
   --bg-card: #2a2a3e;
   --bg-input: #3a3a4e;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --focus-ring: 0 0 0 3px rgba(139, 92, 246, 0.22);
 
   /* Text */
   --text-primary: #ffffff;
@@ -121,6 +123,10 @@ input, textarea, select {
   font-size: inherit;
   color: inherit;
   outline: none;
+}
+
+:where(button, .btn, .input, .custom-dropdown__trigger, .icon-btn, .icon-btn-ghost, .back-btn):focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 /* Utility: visually hidden */

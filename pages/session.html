@@ -44,6 +44,12 @@
         <!-- Dynamic: participant rows with badges rendered here -->
       </div>
 
+      <!-- Session start countdown -->
+      <div class="session-start-banner hidden" id="sessionStartBanner" role="status" aria-live="polite">
+        <div class="session-start-banner__label">Starting in</div>
+        <div class="session-start-banner__countdown" id="sessionStartCountdown">3</div>
+      </div>
+
       <!-- Return summary banner -->
       <div class="session-return-banner hidden" id="focusReturnBanner" role="status" aria-live="polite">
         <div class="session-return-banner__text" id="focusReturnText"></div>
@@ -62,6 +68,17 @@
           <div class="session-outcome__time" id="outcomeTime">
             <span id="outcomeFocus">01:00</span> <span>| </span><span id="outcomeTarget">01:00</span>
           </div>
+        </div>
+
+        <div class="session-report">
+          <div class="session-report__header">
+            <div>
+              <div class="session-outcome__label">Detailed report</div>
+              <div class="session-report__title">Both participants</div>
+            </div>
+            <div class="session-report__summary" id="sessionReportSummary">Loading report...</div>
+          </div>
+          <div class="session-report__cards" id="sessionReportParticipants"></div>
         </div>
       </div>
     </div>

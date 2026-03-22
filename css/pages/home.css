@@ -10,21 +10,25 @@
 }
 
 .home-section {
-  margin-top: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  padding: 18px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--border-color);
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
 .home-section__title {
-  font-size: var(--font-size-sm);
+  font-size: 0.8125rem;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.09em;
   margin-bottom: var(--spacing-md);
 }
 
 .home-requests {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 12px;
 }
 
 .home-empty {
@@ -64,7 +68,8 @@
   right: 0;
   min-width: 180px;
   background-color: var(--bg-card);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
   box-shadow: var(--shadow-lg);
   padding: var(--spacing-xs) 0;
   z-index: 100;
@@ -177,7 +182,8 @@
 
 .modal {
   background-color: var(--bg-card);
-  border-radius: var(--radius-lg);
+  border-radius: 18px;
+  border: 1px solid var(--border-color);
   width: 100%;
   max-width: 380px;
   overflow: hidden;

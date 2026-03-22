@@ -38,10 +38,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   let warningStartedAt = null;
   let returnBannerTimeout = null;
   let lastActivityAt = Date.now();
+  let sessionStartCountdownInterval = null;
+  let sessionStartCountdownSeconds = 0;
   const targetSeconds = session.duration_minutes * 60;
   const IDLE_WARNING_AFTER_MS = 2 * 60 * 1000;
   const AWAY_WARNING_AFTER_MS = 30 * 1000;
   const RETURN_SUMMARY_MIN_MS = 5 * 1000;
+  const SESSION_START_COUNTDOWN_SECONDS = 3;
 
   // DOM refs
   const els = {
@@ -49,6 +52,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     focusReturnBanner: Dom.getById('focusReturnBanner'),
     focusReturnText: Dom.getById('focusReturnText'),
     focusReturnDismiss: Dom.getById('focusReturnDismiss'),
+    sessionStartBanner: Dom.getById('sessionStartBanner'),
+    sessionStartCountdown: Dom.getById('sessionStartCountdown'),
     sessionOutcome: Dom.getById('sessionOutcome'),
     sessionNumber: Dom.getById('sessionNumber'),
     sessionDate: Dom.getById('sessionDate'),
@@ -73,7 +78,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     focusWarningMessage: Dom.getById('focusWarningMessage'),
     focusWarningSummary: Dom.getById('focusWarningSummary'),
     focusWarningContinue: Dom.getById('focusWarningContinue'),
-    focusWarningLeave: Dom.getById('focusWarningLeave')
+    focusWarningLeave: Dom.getById('focusWarningLeave'),
+    sessionReportSummary: Dom.getById('sessionReportSummary'),
+    sessionReportParticipants: Dom.getById('sessionReportParticipants')
   };
 
   function formatDuration(ms) {
@@ -91,6 +98,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function isActiveFocusSession() {
     return session.status === 'active' && !hasLeft;
+  }
+
+  function getReportParticipants() {
+    const me = participants.find(p => p.user_id === user.id) || null;
+    const partner = participants.find(p => p.user_id !== user.id) || null;
+    return { me, partner };
+  }
+
+  function getOutcomeLabel(focusSeconds) {
+    const outcome = TimeUtils.getOutcome(focusSeconds, targetSeconds);
+    if (outcome === SESSION_STATES.LEFT_EARLY) return 'Left early';
+    if (outcome === SESSION_STATES.COMPLETED) return 'Completed';
+    return 'Outdid yourself';
+  }
+
+  function getOutcomePillClass(focusSeconds) {
+    const outcome = TimeUtils.getOutcome(focusSeconds, targetSeconds);
+    if (outcome === SESSION_STATES.LEFT_EARLY) return 'session-report-pill--red';
+    if (outcome === SESSION_STATES.COMPLETED) return 'session-report-pill--green';
+    return 'session-report-pill--yellow';
+  }
+
+  function formatSessionReportTime(value) {
+    return value ? TimeUtils.formatTime(value) : '--:--';
   }
 
   function clearAttentionTimers() {
@@ -115,6 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function resetAttentionState() {
     clearAttentionTimers();
+    clearSessionStartCountdown();
     hideReturnBanner();
     awayState = null;
     warningVisible = false;
@@ -122,6 +154,90 @@ document.addEventListener('DOMContentLoaded', async () => {
     warningStartedAt = null;
     document.body.classList.remove('session-warning-active');
     Dom.hide(els.focusWarningModal);
+  }
+
+  function clearSessionStartCountdown() {
+    if (sessionStartCountdownInterval) {
+      clearInterval(sessionStartCountdownInterval);
+      sessionStartCountdownInterval = null;
+    }
+
+    sessionStartCountdownSeconds = 0;
+    Dom.hide(els.sessionStartBanner);
+  }
+
+  function allParticipantsReady() {
+    return participants.length >= 2 && participants.every(p => p.status === 'ready');
+  }
+
+  async function promoteSessionToActive() {
+    if (hasLeft || session.status !== 'waiting') return;
+
+    clearSessionStartCountdown();
+
+    if (user.id === session.created_by) {
+      const { error: sessionError } = await SessionService.updateSessionStatus(sessionId, 'active');
+      if (sessionError) {
+        Dom.showToast(sessionError.message || 'Failed to start session');
+        maybeStartSessionCountdown();
+        return;
+      }
+
+      const { error: myStatusError } = await SessionService.updateMyStatus(sessionId, user.id, 'active');
+      if (myStatusError) {
+        Dom.showToast(myStatusError.message || 'Failed to update your status');
+        maybeStartSessionCountdown();
+        return;
+      }
+
+      session.status = 'active';
+      showActiveState();
+      return;
+    }
+
+    const { error: myStatusError } = await SessionService.updateMyStatus(sessionId, user.id, 'active');
+    if (myStatusError) {
+      Dom.showToast(myStatusError.message || 'Failed to update your status');
+      maybeStartSessionCountdown();
+    }
+  }
+
+  function renderSessionStartCountdown() {
+    els.sessionStartCountdown.textContent = sessionStartCountdownSeconds.toString();
+    Dom.show(els.sessionStartBanner);
+  }
+
+  function maybeStartSessionCountdown() {
+    if (hasLeft || session.status !== 'waiting') {
+      clearSessionStartCountdown();
+      return;
+    }
+
+    if (!allParticipantsReady()) {
+      clearSessionStartCountdown();
+      return;
+    }
+
+    if (sessionStartCountdownInterval) return;
+
+    sessionStartCountdownSeconds = SESSION_START_COUNTDOWN_SECONDS;
+    renderSessionStartCountdown();
+
+    sessionStartCountdownInterval = setInterval(async () => {
+      if (hasLeft || session.status !== 'waiting' || !allParticipantsReady()) {
+        clearSessionStartCountdown();
+        return;
+      }
+
+      sessionStartCountdownSeconds -= 1;
+
+      if (sessionStartCountdownSeconds <= 0) {
+        await promoteSessionToActive();
+        return;
+      }
+
+      renderSessionStartCountdown();
+    }, 1000);
   }
 
   function scheduleIdleWarning() {
@@ -359,19 +475,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (session.status === 'waiting') {
       const host = participants.find(p => p.user_id === session.created_by);
       if (host && host.status === 'left' && user.id !== session.created_by) {
+        clearSessionStartCountdown();
         Dom.showToast('Host cancelled the session');
         setTimeout(() => { window.location.href = './home.html'; }, 1500);
         return;
       }
 
-      // Check if all participants are ready -> auto-start
-      const allReady = participants.length >= 2 && participants.every(p => p.status === 'ready');
-      if (allReady) {
-        session.status = 'active';
-        await SessionService.updateSessionStatus(sessionId, 'active');
-        await SessionService.updateMyStatus(sessionId, user.id, 'active');
-        showActiveState();
-      }
+      maybeStartSessionCountdown();
+    } else {
+      clearSessionStartCountdown();
     }
 
     // If session became active (triggered by the other user), start timer
@@ -523,8 +635,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const myParticipant = participants.find(p => p.user_id === user.id);
     if (myParticipant && myParticipant.status === 'waiting') {
       // Auto-mark as ready
-      SessionService.updateMyStatus(sessionId, user.id, 'ready');
+      SessionService.updateMyStatus(sessionId, user.id, 'ready').then(() => {
+        if (session.status === 'waiting') {
+          maybeStartSessionCountdown();
+        }
+      });
     }
+
+    maybeStartSessionCountdown();
   }
 
   // ---- ACTIVE STATE ----
@@ -645,6 +763,92 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
 
+  function renderSessionReport(currentUserFocusSeconds) {
+    const { me, partner } = getReportParticipants();
+    const reportParticipants = [me, partner].filter(Boolean);
+
+    const startedAt = session.started_at || (me && me.joined_at) || (partner && partner.joined_at) || session.created_at;
+    const endedAt = session.ended_at || (me && me.left_at) || (partner && partner.left_at) || null;
+
+    els.sessionReportSummary.textContent = [
+      `Started ${formatSessionReportTime(startedAt)}`,
+      `Ended ${formatSessionReportTime(endedAt)}`,
+      `Target ${TimeUtils.formatMinutes(session.duration_minutes)}`
+    ].join(' · ');
+
+    Dom.clear(els.sessionReportParticipants);
+
+    if (reportParticipants.length === 0) {
+      els.sessionReportParticipants.innerHTML = '<div class="friends-empty">No report data available</div>';
+      return;
+    }
+
+    reportParticipants.forEach((participant, index) => {
+      const focusSeconds = participant.user_id === user.id
+        ? currentUserFocusSeconds
+        : (participant.focus_time_seconds || 0);
+      const outcomeLabel = getOutcomeLabel(focusSeconds);
+      const pillClass = getOutcomePillClass(focusSeconds);
+      const statusClass = index === 0 ? 'session-report-card--primary' : 'session-report-card--secondary';
+      const name = participant.profile ? participant.profile.name : (participant.user_id === user.id ? 'You' : 'Partner');
+      const username = participant.profile && participant.profile.username ? `@${participant.profile.username}` : '';
+
+      const card = document.createElement('div');
+      card.className = `session-report-card ${statusClass}`;
+
+      const header = document.createElement('div');
+      header.className = 'session-report-card__header';
+
+      const avatar = Dom.buildAvatar(name, participant.profile && participant.profile.avatar_color, 'md');
+      header.appendChild(avatar);
+
+      const info = document.createElement('div');
+      info.className = 'session-report-card__info';
+      info.innerHTML = `
+        <div class="session-report-card__name">${name}</div>
+        <div class="session-report-card__username">${username || 'Session participant'}</div>
+      `;
+      header.appendChild(info);
+
+      const meta = Dom.create('div', { className: 'session-report-card__meta' });
+      meta.appendChild(Dom.create('span', { className: `session-report-pill ${pillClass}`, textContent: outcomeLabel }));
+      if (participant.user_id === user.id) {
+        meta.appendChild(Dom.create('span', { className: 'session-report-pill session-report-pill--green', textContent: 'You' }));
+      } else {
+        meta.appendChild(Dom.create('span', { className: 'session-report-pill session-report-pill--yellow', textContent: 'Partner' }));
+      }
+      header.appendChild(meta);
+
+      const details = document.createElement('div');
+      details.className = 'session-report-card__details';
+      details.appendChild(Dom.create('div', {
+        className: 'session-report-card__detail',
+        innerHTML: `
+          <span class="session-report-card__label">Focus time</span>
+          <span class="session-report-card__value">${TimeUtils.formatTimerLong(focusSeconds)}</span>
+        `
+      }));
+      details.appendChild(Dom.create('div', {
+        className: 'session-report-card__detail',
+        innerHTML: `
+          <span class="session-report-card__label">Joined</span>
+          <span class="session-report-card__value">${formatSessionReportTime(participant.joined_at)}</span>
+        `
+      }));
+      details.appendChild(Dom.create('div', {
+        className: 'session-report-card__detail',
+        innerHTML: `
+          <span class="session-report-card__label">Left</span>
+          <span class="session-report-card__value">${formatSessionReportTime(participant.left_at)}</span>
+        `
+      }));
+
+      card.appendChild(header);
+      card.appendChild(details);
+      els.sessionReportParticipants.appendChild(card);
+    });
+  }
+
   // ---- OUTCOME STATE ----
 
   function showOutcome(focusSeconds) {
@@ -674,6 +878,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     els.outcomeFocus.textContent = TimeUtils.formatTimerLong(focusSeconds);
     els.outcomeTarget.textContent = TimeUtils.formatMinutes(session.duration_minutes);
+    renderSessionReport(focusSeconds);
 
     // Submit button
     els.btnSubmit.onclick = async () => {
