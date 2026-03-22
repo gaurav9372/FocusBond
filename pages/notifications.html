@@ -3,38 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FocusBond — Add Friends</title>
+  <title>FocusBond — Notifications</title>
   <link rel="stylesheet" href="../css/global.css">
   <link rel="stylesheet" href="../css/components.css">
   <link rel="stylesheet" href="../css/layout.css">
-  <link rel="stylesheet" href="../css/pages/friends.css">
 </head>
 <body>
   <div class="container has-bottom-nav">
-    <!-- Header -->
     <div class="page-header">
-      <a href="./friends.html" class="back-btn" aria-label="Back">
-        <img src="../assets/icons/back.svg" alt="Back">
-      </a>
-      <h1 class="page-header__title">Add Friends</h1>
+      <h1 class="page-header__title">Notifications</h1>
       <div></div>
     </div>
 
-    <!-- Search -->
-    <div class="page-content">
-      <div class="add-friend-search">
-        <div class="input-group">
-          <label for="searchUsername">Enter Username</label>
-          <input type="text" id="searchUsername" class="input" data-field="search" placeholder="Search by username">
-        </div>
-      </div>
-
-      <!-- Results -->
-      <div id="searchResults" class="add-friend-results hidden">
-        <div class="add-friend-results__title">Result</div>
-        <div id="resultsList">
-          <!-- Dynamic: search result rows rendered here -->
-        </div>
+    <div class="page-content screen-placeholder">
+      <div>
+        <h2>Notifications</h2>
+        <p>No notifications yet</p>
       </div>
     </div>
 
@@ -54,7 +38,7 @@
         <img src="../assets/icons/Frame-2.svg" class="bottom-nav__icon" alt="" aria-hidden="true">
         <span>Friends</span>
       </a>
-      <a href="./notifications.html" class="bottom-nav__item">
+      <a href="./notifications.html" class="bottom-nav__item active">
         <img src="../assets/icons/Frame-3.svg" class="bottom-nav__icon" alt="" aria-hidden="true">
         <span>Notifications</span>
       </a>
@@ -65,11 +49,7 @@
   <script src="../js/config.js"></script>
   <script src="../js/supabase.js"></script>
   <script src="../js/utils/storage.js"></script>
-  <script src="../js/utils/dom.js"></script>
-  <script src="../js/services/auth.js"></script>
-  <script src="../js/services/friends.js"></script>
   <script src="../js/app.js"></script>
-  <script src="../js/pages/addFriend.js"></script>
 </body>
 </html>
 

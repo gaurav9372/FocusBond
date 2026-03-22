@@ -247,3 +247,12 @@
   background-color: var(--color-purple);
   border-radius: var(--radius-md);
 }
+
+.has-bottom-nav .home-footer {
+  bottom: 96px;
+}
+
+.has-bottom-nav .home-footer::before {
+  height: 72px;
+  top: -72px;
+}

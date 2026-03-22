@@ -297,10 +297,11 @@ body.session-warning-active #sessionLive {
   color: var(--text-muted);
 }
 
-.session-report-card__meta {
+.session-report-card__chips {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-sm);
+  align-items: center;
 }
 
 .session-report-pill {

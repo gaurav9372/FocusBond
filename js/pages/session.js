@@ -810,14 +810,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       header.appendChild(info);
 
-      const meta = Dom.create('div', { className: 'session-report-card__meta' });
-      meta.appendChild(Dom.create('span', { className: `session-report-pill ${pillClass}`, textContent: outcomeLabel }));
+      const chips = Dom.create('div', { className: 'session-report-card__chips' });
+      chips.appendChild(Dom.create('span', { className: `session-report-pill ${pillClass}`, textContent: outcomeLabel }));
       if (participant.user_id === user.id) {
-        meta.appendChild(Dom.create('span', { className: 'session-report-pill session-report-pill--green', textContent: 'You' }));
+        chips.appendChild(Dom.create('span', { className: 'session-report-pill session-report-pill--green', textContent: 'You' }));
       } else {
-        meta.appendChild(Dom.create('span', { className: 'session-report-pill session-report-pill--yellow', textContent: 'Partner' }));
+        chips.appendChild(Dom.create('span', { className: 'session-report-pill session-report-pill--yellow', textContent: 'Partner' }));
       }
-      header.appendChild(meta);
 
       const details = document.createElement('div');
       details.className = 'session-report-card__details';
@@ -844,6 +843,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }));
 
       card.appendChild(header);
+      card.appendChild(chips);
       card.appendChild(details);
       els.sessionReportParticipants.appendChild(card);
     });

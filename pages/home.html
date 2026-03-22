@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="../css/pages/home.css">
 </head>
 <body>
-  <div class="container">
+  <div class="container has-bottom-nav">
     <!-- Header -->
     <div class="page-header">
       <div>
@@ -85,6 +85,28 @@
         </div>
       </div>
     </div>
+
+    <nav class="bottom-nav" aria-label="Primary">
+      <a href="./home.html" class="bottom-nav__item active">
+        <img src="../assets/icons/Frame.svg" class="bottom-nav__icon" alt="" aria-hidden="true">
+        <span>Home</span>
+      </a>
+      <a href="./report.html" class="bottom-nav__item">
+        <img src="../assets/icons/Frame-1.svg" class="bottom-nav__icon" alt="" aria-hidden="true">
+        <span>Report</span>
+      </a>
+      <button type="button" class="bottom-nav__center" id="bottomNavNewSession" aria-label="New Session">
+        <img src="../assets/icons/plus.svg" class="bottom-nav__icon" alt="" aria-hidden="true">
+      </button>
+      <a href="./friends.html" class="bottom-nav__item">
+        <img src="../assets/icons/Frame-2.svg" class="bottom-nav__icon" alt="" aria-hidden="true">
+        <span>Friends</span>
+      </a>
+      <a href="./notifications.html" class="bottom-nav__item">
+        <img src="../assets/icons/Frame-3.svg" class="bottom-nav__icon" alt="" aria-hidden="true">
+        <span>Notifications</span>
+      </a>
+    </nav>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
