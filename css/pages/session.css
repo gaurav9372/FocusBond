@@ -20,7 +20,7 @@ body.session-warning-active #sessionLive {
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  margin-top: var(--spacing-md);
   padding: var(--spacing-md);
   border: 1px solid rgba(234, 179, 8, 0.45);
   border-radius: var(--radius-lg);

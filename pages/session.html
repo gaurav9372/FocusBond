@@ -12,12 +12,6 @@
 <body>
   <div class="container">
 
-    <!-- Return summary banner -->
-    <div class="session-return-banner hidden" id="focusReturnBanner" role="status" aria-live="polite">
-      <div class="session-return-banner__text" id="focusReturnText"></div>
-      <button class="session-return-banner__dismiss" id="focusReturnDismiss" aria-label="Dismiss summary">Dismiss</button>
-    </div>
-
     <!-- ========== WAITING / ACTIVE STATE ========== -->
     <div id="sessionLive" class="page-content">
       <!-- Session Info -->
@@ -48,6 +42,12 @@
       <!-- Participants -->
       <div class="session-participants" id="participantsList">
         <!-- Dynamic: participant rows with badges rendered here -->
+      </div>
+
+      <!-- Return summary banner -->
+      <div class="session-return-banner hidden" id="focusReturnBanner" role="status" aria-live="polite">
+        <div class="session-return-banner__text" id="focusReturnText"></div>
+        <button class="session-return-banner__dismiss" id="focusReturnDismiss" aria-label="Dismiss summary">Dismiss</button>
       </div>
     </div>
 
