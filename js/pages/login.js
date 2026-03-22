@@ -11,15 +11,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.preventDefault();
     Validation.clearFormErrors(form);
 
-    const email = Dom.getById('email').value.trim();
+    const identifier = Dom.getById('loginIdentifier').value.trim();
     const password = Dom.getById('password').value;
 
     // Validate
     const errors = Validation.validateForm(
-      { email, password },
+      { identifier, password },
       {
-        email: [
-          { check: v => Validation.isRequired(v), message: 'Email is required' }
+        identifier: [
+          { check: v => Validation.isRequired(v), message: 'Username or email is required' }
         ],
         password: [
           { check: v => Validation.isRequired(v), message: 'Password is required' }
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Logging in...';
 
-    const { error } = await AuthService.login(email, password);
+    const { error } = await AuthService.login(identifier, password);
 
     if (error) {
       Dom.showToast(error.message || 'Login failed');

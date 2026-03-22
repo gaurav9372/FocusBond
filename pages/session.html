@@ -12,6 +12,12 @@
 <body>
   <div class="container">
 
+    <!-- Return summary banner -->
+    <div class="session-return-banner hidden" id="focusReturnBanner" role="status" aria-live="polite">
+      <div class="session-return-banner__text" id="focusReturnText"></div>
+      <button class="session-return-banner__dismiss" id="focusReturnDismiss" aria-label="Dismiss summary">Dismiss</button>
+    </div>
+
     <!-- ========== WAITING / ACTIVE STATE ========== -->
     <div id="sessionLive" class="page-content">
       <!-- Session Info -->
@@ -125,6 +131,23 @@
           <div class="request-card__actions">
             <button class="btn btn-secondary" id="confirmCancel">Cancel</button>
             <button class="btn btn-danger" id="confirmOk">Leave</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Focus Warning Modal -->
+    <div class="modal-overlay hidden" id="focusWarningModal">
+      <div class="modal session-warning-modal">
+        <div class="modal__header">
+          <h2 class="modal__title" id="focusWarningTitle">Stay in focus</h2>
+        </div>
+        <div class="modal__body">
+          <p class="text-secondary" id="focusWarningMessage">The session is still active.</p>
+          <div class="session-warning-modal__summary" id="focusWarningSummary"></div>
+          <div class="request-card__actions">
+            <button class="btn btn-secondary" id="focusWarningContinue">I'm back</button>
+            <button class="btn btn-danger" id="focusWarningLeave">End session</button>
           </div>
         </div>
       </div>

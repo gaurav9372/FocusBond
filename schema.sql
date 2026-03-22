@@ -271,3 +271,32 @@ CREATE POLICY "session_requests_delete" ON public.session_requests
   USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
 
 COMMIT;
+
+
+-- ============================================================
+-- PRODUCTION PATCH (2026-03-22) -- USERNAME OR EMAIL LOGIN
+-- ============================================================
+-- Run this section only (for already-live databases).
+-- Purpose:
+-- 1) Add RPC to resolve username/email -> email for login flow
+-- 2) Keep profiles RLS strict while allowing anon login lookup via function
+
+BEGIN;
+
+CREATE OR REPLACE FUNCTION public.get_login_email(login_input TEXT)
+RETURNS TEXT
+LANGUAGE SQL
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT p.email
+  FROM public.profiles p
+  WHERE lower(p.email) = lower(trim(login_input))
+     OR lower(p.username) = lower(trim(login_input))
+  LIMIT 1;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_login_email(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_login_email(TEXT) TO anon, authenticated;
+
+COMMIT;

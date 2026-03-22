@@ -3,6 +3,22 @@
    =========================== */
 
 const AuthService = {
+  // Resolve a login identifier (username or email) to email for Supabase Auth
+  async resolveLoginEmail(identifier) {
+    const input = (identifier || '').trim();
+    if (!input) return null;
+
+    // Email path: use directly
+    if (input.includes('@')) {
+      return input.toLowerCase();
+    }
+
+    // Username path: resolve via SECURITY DEFINER rpc (works for anon role)
+    const { data, error } = await db.rpc('get_login_email', { login_input: input });
+    if (error) return null;
+    return data || null;
+  },
+
   // Register a new user + create profile
   async register({ name, username, email, password }) {
     // 1. Check username uniqueness
@@ -40,12 +56,21 @@ const AuthService = {
     return { data: authData };
   },
 
-  // Login with email + password
-  async login(email, password) {
+  // Login with username/email + password
+  async login(identifier, password) {
+    const resolvedEmail = await this.resolveLoginEmail(identifier);
+    if (!resolvedEmail) {
+      return { data: null, error: { message: 'Invalid username/email or password' } };
+    }
+
     const { data, error } = await db.auth.signInWithPassword({
-      email,
+      email: resolvedEmail,
       password
     });
+
+    if (error && error.message) {
+      return { data: null, error: { message: 'Invalid username/email or password' } };
+    }
     return { data, error };
   },
 

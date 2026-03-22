@@ -8,6 +8,48 @@ body.session-active {
   transition: background-color 0.1s ease;
 }
 
+body.session-warning-active #sessionLive {
+  opacity: 0.45;
+  filter: saturate(0.75) blur(1px);
+  pointer-events: none;
+}
+
+/* Return summary banner */
+.session-return-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  border: 1px solid rgba(234, 179, 8, 0.45);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.16), rgba(42, 42, 62, 0.95));
+  box-shadow: var(--shadow-md);
+}
+
+.session-return-banner__text {
+  flex: 1;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+
+.session-return-banner__dismiss {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(160, 160, 176, 0.4);
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: var(--font-size-sm);
+}
+
+.session-return-banner__dismiss:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
 /* Session header info */
 .session-header {
   text-align: center;
@@ -138,6 +180,11 @@ body.session-active {
   max-width: 340px;
 }
 
+.session-warning-modal {
+  border: 1px solid rgba(234, 179, 8, 0.45);
+  box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.15), var(--shadow-lg);
+}
+
 .modal__header {
   padding: var(--spacing-lg) var(--spacing-lg) 0;
 }
@@ -152,4 +199,13 @@ body.session-active {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+}
+
+.session-warning-modal__summary {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  background-color: rgba(234, 179, 8, 0.08);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
 }

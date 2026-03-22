@@ -30,11 +30,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   let startTimestamp = null;
   let hasLeft = false;
   let partnerLeftNotified = false;
+  let idleWarningTimeout = null;
+  let awayWarningTimeout = null;
+  let awayState = null;
+  let warningVisible = false;
+  let warningReason = null;
+  let warningStartedAt = null;
+  let returnBannerTimeout = null;
+  let lastActivityAt = Date.now();
   const targetSeconds = session.duration_minutes * 60;
+  const IDLE_WARNING_AFTER_MS = 2 * 60 * 1000;
+  const AWAY_WARNING_AFTER_MS = 30 * 1000;
+  const RETURN_SUMMARY_MIN_MS = 5 * 1000;
 
   // DOM refs
   const els = {
     sessionLive: Dom.getById('sessionLive'),
+    focusReturnBanner: Dom.getById('focusReturnBanner'),
+    focusReturnText: Dom.getById('focusReturnText'),
+    focusReturnDismiss: Dom.getById('focusReturnDismiss'),
     sessionOutcome: Dom.getById('sessionOutcome'),
     sessionNumber: Dom.getById('sessionNumber'),
     sessionDate: Dom.getById('sessionDate'),
@@ -53,8 +67,250 @@ document.addEventListener('DOMContentLoaded', async () => {
     outcomeEmoji: Dom.getById('outcomeEmoji'),
     outcomeTitle: Dom.getById('outcomeTitle'),
     outcomeFocus: Dom.getById('outcomeFocus'),
-    outcomeTarget: Dom.getById('outcomeTarget')
+    outcomeTarget: Dom.getById('outcomeTarget'),
+    focusWarningModal: Dom.getById('focusWarningModal'),
+    focusWarningTitle: Dom.getById('focusWarningTitle'),
+    focusWarningMessage: Dom.getById('focusWarningMessage'),
+    focusWarningSummary: Dom.getById('focusWarningSummary'),
+    focusWarningContinue: Dom.getById('focusWarningContinue'),
+    focusWarningLeave: Dom.getById('focusWarningLeave')
   };
+
+  function formatDuration(ms) {
+    return TimeUtils.formatTimerLong(Math.max(1, Math.floor(ms / 1000)));
+  }
+
+  function getElapsedSecondsNow() {
+    if (!startTimestamp) return elapsedSeconds;
+    return Math.max(elapsedSeconds, Math.floor((Date.now() - startTimestamp) / 1000));
+  }
+
+  function getSessionStatusSummary() {
+    return `${TimeUtils.formatTimerLong(getElapsedSecondsNow())} / ${TimeUtils.formatMinutes(session.duration_minutes)}`;
+  }
+
+  function isActiveFocusSession() {
+    return session.status === 'active' && !hasLeft;
+  }
+
+  function clearAttentionTimers() {
+    if (idleWarningTimeout) {
+      clearTimeout(idleWarningTimeout);
+      idleWarningTimeout = null;
+    }
+
+    if (awayWarningTimeout) {
+      clearTimeout(awayWarningTimeout);
+      awayWarningTimeout = null;
+    }
+  }
+
+  function hideReturnBanner() {
+    if (returnBannerTimeout) {
+      clearTimeout(returnBannerTimeout);
+      returnBannerTimeout = null;
+    }
+    Dom.hide(els.focusReturnBanner);
+  }
+
+  function resetAttentionState() {
+    clearAttentionTimers();
+    hideReturnBanner();
+    awayState = null;
+    warningVisible = false;
+    warningReason = null;
+    warningStartedAt = null;
+    document.body.classList.remove('session-warning-active');
+    Dom.hide(els.focusWarningModal);
+  }
+
+  function scheduleIdleWarning() {
+    clearAttentionTimers();
+
+    if (!isActiveFocusSession() || warningVisible || awayState) {
+      return;
+    }
+
+    idleWarningTimeout = setTimeout(() => {
+      if (!isActiveFocusSession() || warningVisible || awayState) return;
+      openAttentionWarning('idle', lastActivityAt);
+    }, IDLE_WARNING_AFTER_MS);
+  }
+
+  function beginAwayState(mode) {
+    if (!isActiveFocusSession() || warningVisible) return;
+
+    if (awayState) {
+      if (awayState.mode === 'hidden' || awayState.mode === mode) return;
+      if (mode === 'hidden') {
+        awayState.mode = 'hidden';
+      }
+      return;
+    }
+
+    awayState = {
+      mode,
+      startedAt: Date.now()
+    };
+
+    clearAttentionTimers();
+    awayWarningTimeout = setTimeout(() => {
+      if (!isActiveFocusSession() || warningVisible || !awayState) return;
+      openAttentionWarning(awayState.mode, awayState.startedAt);
+    }, AWAY_WARNING_AFTER_MS);
+  }
+
+  function finishAwayState() {
+    if (!awayState) return null;
+
+    const state = awayState;
+    awayState = null;
+
+    if (awayWarningTimeout) {
+      clearTimeout(awayWarningTimeout);
+      awayWarningTimeout = null;
+    }
+
+    return state;
+  }
+
+  function showReturnSummaryBanner(reason, awayMs) {
+    if (warningVisible) return;
+
+    const awayLabel = reason === 'idle' ? 'You were idle for' : 'You were away for';
+    els.focusReturnText.textContent = `${awayLabel} ${formatDuration(awayMs)}. Session is still active at ${getSessionStatusSummary()}.`;
+    Dom.show(els.focusReturnBanner);
+
+    if (returnBannerTimeout) {
+      clearTimeout(returnBannerTimeout);
+    }
+
+    returnBannerTimeout = setTimeout(() => {
+      hideReturnBanner();
+    }, 7000);
+  }
+
+  function updateWarningModal(reason, startedAt) {
+    const awayMs = Math.max(0, Date.now() - startedAt);
+    const isIdle = reason === 'idle';
+
+    els.focusWarningTitle.textContent = isIdle ? 'Stay in focus' : 'Welcome back';
+    els.focusWarningMessage.textContent = isIdle
+      ? 'You have been inactive long enough that the session needs attention.'
+      : 'You stepped away from the session. It is still running.';
+    els.focusWarningSummary.textContent = `${isIdle ? 'Idle' : 'Away'} for ${formatDuration(awayMs)}. Session is active at ${getSessionStatusSummary()}.`;
+  }
+
+  function openAttentionWarning(reason, startedAt) {
+    if (!isActiveFocusSession() || warningVisible) return;
+
+    warningVisible = true;
+    warningReason = reason;
+    warningStartedAt = startedAt;
+    document.body.classList.add('session-warning-active');
+    updateWarningModal(reason, startedAt);
+    Dom.show(els.focusWarningModal);
+  }
+
+  function closeAttentionWarning(showSummary = true) {
+    if (!warningVisible) return;
+
+    const startedAt = warningStartedAt || (warningReason === 'idle' ? lastActivityAt : Date.now());
+    const reason = warningReason || 'away';
+    const awayMs = Math.max(0, Date.now() - startedAt);
+
+    warningVisible = false;
+    warningReason = null;
+    warningStartedAt = null;
+    Dom.hide(els.focusWarningModal);
+    document.body.classList.remove('session-warning-active');
+    clearAttentionTimers();
+
+    if (showSummary && awayMs >= RETURN_SUMMARY_MIN_MS) {
+      showReturnSummaryBanner(reason, awayMs);
+    }
+
+    if (isActiveFocusSession()) {
+      lastActivityAt = Date.now();
+      scheduleIdleWarning();
+    }
+  }
+
+  function handleReturnFromAway() {
+    const state = finishAwayState();
+
+    if (state) {
+      const awayMs = Math.max(0, Date.now() - state.startedAt);
+
+      if (warningVisible) {
+        updateWarningModal(state.mode, state.startedAt);
+        warningStartedAt = state.startedAt;
+      } else if (awayMs >= RETURN_SUMMARY_MIN_MS) {
+        showReturnSummaryBanner(state.mode, awayMs);
+      }
+    }
+
+    lastActivityAt = Date.now();
+
+    if (!warningVisible && isActiveFocusSession()) {
+      scheduleIdleWarning();
+    }
+  }
+
+  function handleUserActivity() {
+    if (!isActiveFocusSession() || warningVisible) return;
+
+    lastActivityAt = Date.now();
+    scheduleIdleWarning();
+  }
+
+  function handleVisibilityChange() {
+    if (!isActiveFocusSession()) return;
+
+    if (document.hidden) {
+      beginAwayState('hidden');
+      return;
+    }
+
+    handleReturnFromAway();
+  }
+
+  function handleWindowBlur() {
+    if (!isActiveFocusSession() || document.hidden) return;
+    beginAwayState('blur');
+  }
+
+  function handleWindowFocus() {
+    if (!isActiveFocusSession() || document.hidden) return;
+    handleReturnFromAway();
+  }
+
+  async function endCurrentSession() {
+    if (hasLeft) return;
+
+    hasLeft = true;
+    resetAttentionState();
+    stopTimer();
+    elapsedSeconds = Math.floor((Date.now() - startTimestamp) / 1000);
+    await SessionService.submitFocusTime(sessionId, user.id, elapsedSeconds);
+    await SessionService.updateMyStatus(sessionId, user.id, 'left');
+    showOutcome(elapsedSeconds);
+  }
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  window.addEventListener('blur', handleWindowBlur);
+  window.addEventListener('focus', handleWindowFocus);
+  document.addEventListener('pointerdown', handleUserActivity, { passive: true });
+  document.addEventListener('keydown', handleUserActivity);
+  document.addEventListener('touchstart', handleUserActivity, { passive: true });
+  document.addEventListener('scroll', handleUserActivity, { passive: true, capture: true });
+
+  els.focusReturnDismiss.addEventListener('click', hideReturnBanner);
+  els.focusWarningContinue.addEventListener('click', () => closeAttentionWarning(true));
+  els.focusWarningLeave.addEventListener('click', async () => {
+    resetAttentionState();
+    await endCurrentSession();
+  });
 
   // Set session info
   els.sessionDate.textContent = TimeUtils.formatDate(session.created_at);
@@ -153,6 +409,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Cleanup on page unload
   window.addEventListener('beforeunload', () => {
+    resetAttentionState();
     SessionService.unsubscribe(realtimeChannel);
     SessionService.unsubscribe(requestsChannel);
     if (timerInterval) clearInterval(timerInterval);
@@ -274,6 +531,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function showActiveState() {
     document.body.classList.add('session-active');
+    resetAttentionState();
     Dom.show(els.sessionLive);
     Dom.hide(els.sessionOutcome);
     Dom.show(els.liveActions);
@@ -294,15 +552,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     renderParticipants();
     startTimer();
+    lastActivityAt = Date.now();
+    scheduleIdleWarning();
 
     // Stop session button
     els.btnStop.onclick = async () => {
-      hasLeft = true;
-      stopTimer();
-      elapsedSeconds = Math.floor((Date.now() - startTimestamp) / 1000);
-      await SessionService.submitFocusTime(sessionId, user.id, elapsedSeconds);
-      await SessionService.updateMyStatus(sessionId, user.id, 'left');
-      showOutcome(elapsedSeconds);
+      await endCurrentSession();
     };
   }
 
@@ -393,6 +648,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ---- OUTCOME STATE ----
 
   function showOutcome(focusSeconds) {
+    resetAttentionState();
     document.body.classList.remove('session-active');
     Dom.hide(els.sessionLive);
     Dom.show(els.sessionOutcome);
