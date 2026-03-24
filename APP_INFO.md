@@ -1,7 +1,12 @@
 # FocusBond - Accountability Partner App
 
 ## Overview
-A web app where friends hold each other accountable through timed focus sessions. Users can add friends, invite them to sessions, and track focus performance together. Dark mode only for MVP. Deployed on Netlify with Supabase backend.
+A web app where two friends hold each other accountable through timed focus sessions.
+
+- Dark mode only (MVP)
+- Frontend: HTML/CSS/JS (multi-page app)
+- Backend: Supabase Auth + Postgres + Realtime
+- Deployment: Netlify + Supabase
 
 **Current Version:** FocusBond 0.5 - Beta
 
@@ -10,124 +15,107 @@ A web app where friends hold each other accountable through timed focus sessions
 ## Screens & Features
 
 ### 1. Login
-- Fields: Email, Password
+- Fields: **Username or Email**, Password
 - Password eye toggle for show/hide
-- "FocusBond" branding header
-- Actions: Login, Navigate to Create Account
-- Auto-redirects to Home if already logged in
-- Validation: required fields, error display
+- Actions: Login, navigate to Create Account
+- Validation: required fields, error toast
+- If already authenticated, auto-redirect to Home
 
 ### 2. Create Account (Register)
 - Fields: Name, Username, Email, Password, Re-enter Password
-- Back button to return to Login
 - Validation:
-  - Name: letters and spaces only, max 30 characters
-  - Username: alphanumeric and underscore only, max 15 characters
+  - Name: letters/spaces/hyphen/apostrophe, max 30
+  - Username: lowercase letters, numbers, underscore, max 15
   - Email format validation
-  - Password match check
+  - Password match + min length
   - Username uniqueness check
-- Actions: Submit (register), Navigate to Login
+- Back/Login navigation
 
 ### 3. Home / Dashboard
-- Header: "FocusBond 0.5 - Beta" branding
-- Welcome message with user's name
-- Avatar menu (top-right) with logout option
-- **Session Requests** section:
-  - Shows incoming invitations from friends
-  - Each request displays: friend avatar, name, username, session duration, invite time
-  - Accept / Reject buttons per request
-  - Realtime updates for new requests and cancellations
-- **Past Sessions** section:
-  - Shows completed/ended sessions with detailed timeline
-  - Requested time, join time, leave time displayed per session
-  - Green card borders for completed sessions, red for ended early
-- **New Session** button with modern friend dropdown for selecting a friend and duration
-- **Manage Friends** button with notification dot indicator for pending friend requests
-- Sticky bottom buttons with gradient fade effect
+- Header branding + avatar menu (Edit Profile, Settings placeholder, Logout)
+- Incoming Session Requests (accept/reject, realtime updates)
+- Past Sessions timeline cards (completed / left / cancelled / rejected outcomes)
+- New Session modal with friend picker and duration
+- Separate **New Session CTA button** above tab bar
+- Bottom tab bar navigation (Home / Report / Friends / Notifications)
+- Friend request notification dot on Manage Friends CTA
 
 ### 4. Edit Profile
-- Fields: Name (editable), Username (editable), Email (shown as muted/non-editable)
-- Back button to return to Dashboard
-- Change Password modal (separate from profile form)
-- Validation:
-  - Name: letters and spaces only, max 30 characters
-  - Username: alphanumeric and underscore only, max 15 characters
-  - Username uniqueness check on save
+- Editable: Name, Username
+- Read-only: Email
+- Change Password modal
 
 ### 5. Friends (Manage Friends)
-- Tabs/sections for:
-  - Friend list with avatar, name, username
-  - Pending incoming requests (accept/reject)
-  - Sent pending requests (cancel)
-- Remove friend functionality
-- Search friends by username
-- Add friend by username search with "Add Friend" button per result
-- Prevents adding existing friends or self
+- Friend list
+- Incoming requests accept/reject
+- Remove friend
+- Top-right plus button to open Add Friends page
+- Bottom tab bar visible on this page
+
+### 6. Add Friends
+- Search by username
+- Add Friend / Cancel pending / already-friends status
+- No bottom tab bar on this page (focused sub-flow)
+
+### 7. Session
+- Waiting, Active, and Outcome states in one page
+- Realtime participant updates and session request updates
+- Timer + progress bar + leave/stop handling
+- Outcome summary with submit/edit-time flow
+- No bottom tab bar on this page (focused session flow)
+
+### 8. Report
+- Placeholder page: **Coming soon**
+- Bottom tab bar visible
+
+### 9. Notifications
+- Placeholder page: **Coming soon**
+- Bottom tab bar visible
 
 ---
 
-## Session Flow
+## Primary Navigation Rules
 
-### Creating a Session
-- From Home page, click "New Session" button
-- Modern dropdown appears with friend list
-- Select a friend and set session duration
-- Session request is sent to the selected friend
-
-### State 1: Waiting
-- Session info displayed (participants, duration)
-- Participant list with statuses: **Ready** / **Waiting**
-- Realtime status updates as participants join
-- Action: "Leave Session"
-- Host-leaves-while-waiting: session is cancelled for all participants
-- Reject-while-waiting: participant removed, host notified
-
-### State 2: Active
-- Green background during active session
-- Realtime timer with milliseconds display (00:00:00 format)
-- Progress bar fills as time passes
-- Participant statuses update via realtime: **Active** / **Left**
-- Partner left notification with single beep sound
-- Action: "Leave Session" with in-app confirmation modal
-- When timer reaches target duration: continue/complete prompt appears
-
-### State 3: Left Early (outcome)
-- Emoji: Sad face
-- Message: "You Left Early"
-- Focus time in red vs target
-- Edit time modal (in-app, not browser native)
-- Actions: Submit, Edit Time
-
-### State 4: Session Completed (outcome)
-- Emoji: Party face
-- Message: "Session Completed"
-- Focus time matches target in green
-- Edit time modal (in-app, not browser native)
-- Actions: Submit, Edit Time
-
-### State 5: Outdid Yourself (outcome)
-- Emoji: Cool face
-- Message: "You Outdid Yourself!"
-- Focus time exceeds target in green
-- Edit time modal (in-app, not browser native)
-- Actions: Submit, Edit Time
+- Bottom tab bar appears only on:
+  - `home.html`
+  - `friends.html`
+  - `report.html`
+  - `notifications.html`
+- Bottom tab bar is hidden on:
+  - `profile.html`
+  - `add-friend.html`
+  - `session.html`
+- Home includes a separate centered `+ New Session` action button above the tab bar.
 
 ---
 
-## Key Design Details
-- **Theme**: Dark mode only (light mode removed for MVP)
-- **Colors**: Purple buttons (primary), Green (active/success), Red (left/failed)
-- **Typography**: Clean, modern sans-serif (Inter / Segoe UI)
-- **Layout**: Mobile-first, card-based UI
-- **Avatars**: Circular with initial letter + color background
-- **Modals**: In-app confirmation modals (no browser native dialogs)
-- **Realtime**: Live updates for session status, friend requests, and session requests
+## Session Flow Summary
+
+### Create Session
+1. Open New Session modal from Home
+2. Pick friend + duration
+3. Send request and enter waiting session
+
+### Waiting State
+- Shows participants and invite targets
+- Realtime status updates
+- Host can cancel by leaving
+
+### Active State
+- Live timer (`MM:SS:CS`) + progress bar
+- Partner-left realtime alert + beep
+- Continue/complete prompt when target reached
+
+### Outcome State
+- Left Early / Completed / Outdid Yourself
+- Submit focus time or edit before submit
 
 ---
 
-## What's Remaining (Future)
-- Settings page (coming soon)
-- Light mode / theme toggle
-- Session history analytics
-- Push notifications
-- Minimum 5-min session duration (currently 1 min for testing)
+## Current MVP Notes
+
+- Dark mode only
+- Settings page not implemented (menu placeholder)
+- Report page is placeholder
+- Notifications page is placeholder
+- Push/browser notifications are future scope
